@@ -1,0 +1,143 @@
+/* 🌑 Base styles */
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom, #111 0%, #000 100%);
+  color: #f9f9f9;
+}
+
+/* 🎬 Form Logo */
+.form-logo {
+  width: 150px;
+  margin-bottom: 10px;
+}
+
+/* 🔴 Navbar active Join button */
+.nav-btn.active {
+  background-color: #ff3c3c;
+  color: white;
+}
+
+/* 📦 Join Form Container */
+.join-container {
+  max-width: 620px; /* widened container */
+  margin: 80px auto;
+  background: #1e1e1e;
+  padding: 50px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+
+/* 🧾 Header */
+.join-header {
+  margin-bottom: 30px;
+}
+
+.join-header .logo {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #f9f9f9;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.join-header h2 {
+  margin: 10px 0 5px;
+  font-size: 24px;
+  color: #f9f9f9;
+}
+
+.join-header p {
+  color: #ccc;
+  font-size: 14px;
+}
+
+/* 🧩 Form Fields */
+.join-form .form-group {
+  margin-bottom: 20px;
+}
+
+.join-form input,
+.join-form select {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2c2c2c;
+  color: #fff;
+  font-size: 15px;
+}
+
+.join-form input::placeholder {
+  color: #aaa;
+}
+
+.join-form small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+/* 📅 Date of Birth */
+.join-form .dob-group {
+  display: flex;
+  gap: 10px;
+}
+
+.dob-group input {
+  flex: 1;
+}
+
+/* ☑️ Checkbox */
+.form-group.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-group.checkbox label {
+  font-size: 14px;
+  color: #ddd;
+}
+
+/* 🟡 Join Button */
+.join-form button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  background: #ffcc00;
+  color: #121212;
+  font-weight: bold;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.join-form button:hover {
+  background: #e6b800;
+}
+
+/* 📄 Legal + Login Link */
+.legal,
+.login-link {
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.legal a,
+.login-link a {
+  color: #ffcc00;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.legal a:hover,
+.login-link a:hover {
+  text-decoration: underline;
+}

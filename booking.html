@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book Your Seats – Cinego</title>
+  <link rel="stylesheet" href="booking.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+</head>
+<body>
+
+  <!-- 🖙 Navbar -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="index.html">
+        <img src="cinego-logo.png" alt="Cinego Logo" class="logo-img"/>
+      </a>
+    </div>
+    <div class="nav-auth"></div>
+  </nav>
+
+  <!-- 🎟️ Booking Container -->
+  <main class="booking-container">
+    <div class="booking-header">
+      <div class="movie-meta">
+        <h2 id="movieTitle">Loading…</h2>
+        <p id="screenInfo">
+          <span id="screenLabel">Screen</span> • 
+          <span id="startTime">--:--</span> – 
+          <span id="endTime">--:--</span> • 
+          <span id="format">--</span> • 
+          <span id="bookingLanguage">Unknown</span> • 
+          <span id="bookingRuntime">N/A</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="booking-layout">
+      <!-- LEFT: Seat Map -->
+      <div class="seat-map-section">
+        <div class="screen-label">SCREEN <span id="screenNumber">–</span></div>
+        <section class="seat-map" id="seatMap"></section>
+        <div class="seat-legend-box">
+          <div class="seat-legend">
+            <div class="legend-item"><span class="seat-icon available"></span><span>Available</span></div>
+            <div class="legend-item"><span class="seat-icon selected"></span><span>Selected</span></div>
+            <div class="legend-item"><span class="seat-icon occupied"></span><span>Occupied</span></div>
+            <div class="legend-item"><span class="seat-icon lux"></span><span>Lux</span></div>
+            <div class="legend-item"><span class="seat-icon saver"></span><span>Lux Saver</span></div>
+            <div class="legend-item"><span class="seat-icon supersaver"></span><span>Lux Super Saver</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Summary -->
+      <div class="summary-section">
+        <h3>HOW MANY SEATS?</h3>
+        <div class="selection-list" id="selectedList">
+          <p>No seats selected.</p>
+        </div>
+        <div class="price-display">
+          <p>Total:</p>
+          <strong>£<span id="totalPrice">0.00</span></strong>
+        </div>
+        <div id="errorMsg" class="error-msg"></div>
+        <button id="payNowBtn" class="checkout-btn">REVIEW AND PAY</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 💳 PAYMENT MODAL -->
+  <div id="paymentModal" class="modal-overlay" style="display: none;">
+    <div class="modal">
+      <button type="button" class="close-btn" onclick="window.closeModal()">&times;</button>
+      <h3>Enter Payment Details</h3>
+
+      <label>Card Number</label>
+      <input type="text" id="cardNumber" maxlength="19" placeholder="1234 5678 9012 3456" />
+
+      <label>Expiry Date</label>
+      <input type="text" id="expiry" maxlength="5" placeholder="MM/YY" />
+
+      <label>CVV</label>
+      <input type="password" id="cvv" maxlength="3" placeholder="123" />
+
+      <label>Membership Code (optional)</label>
+      <div class="membership-code-wrapper">
+        <input type="text" id="memberCode" placeholder="e.g. MBR2025" />
+        <button id="applyDiscountBtn" class="apply-btn" type="button">Apply</button>
+      </div>
+
+      <div class="price-display">
+        <p>Total: £<span id="modalTotalPrice">0.00</span></p>
+        <p id="discountInfo" style="display: none;">
+          Discount: £<span id="modalDiscountAmount">0.00</span>
+        </p>
+        <p id="finalTotalWrapper" style="display: none;">
+          New Total: £<strong id="modalDiscountedPrice">0.00</strong>
+        </p>
+      </div>
+
+      <!-- ✔️ Confirm Payment must be a plain button -->
+      <button id="confirmPaymentBtn" class="pay-confirm-btn" type="button">
+        Confirm Payment
+      </button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    &copy; 2025 Cinego. All rights reserved.
+  </footer>
+
+  <!-- JS Files -->
+  <script type="module">
+    import {
+      showPaymentModal,
+      closeModal,
+      confirmPayment,
+      applyMembershipDiscount
+    } from './paymentModal.js';
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const payNowBtn   = document.getElementById("payNowBtn");
+      const applyBtn    = document.getElementById("applyDiscountBtn");
+      const confirmBtn  = document.getElementById("confirmPaymentBtn");
+
+      payNowBtn?.addEventListener("click", () => {
+        const total = document.getElementById("totalPrice").textContent;
+        showPaymentModal(total);
+      });
+
+      applyBtn?.addEventListener("click", applyMembershipDiscount);
+
+      // **THIS** is what actually hooks your confirm button:
+      confirmBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        confirmPayment();
+      });
+
+      // expose closeModal so the “×” can close it:
+      window.closeModal = closeModal;
+
+      // Card‑number auto‑format
+      document.getElementById("cardNumber")?.addEventListener("input", (e) => {
+        e.target.value = e.target.value
+          .replace(/\D/g, "")
+          .replace(/(.{4})/g, "$1 ")
+          .trim();
+      });
+
+      // Expiry auto‑format
+      document.getElementById("expiry")?.addEventListener("input", (e) => {
+        let v = e.target.value.replace(/\D/g, "");
+        if (v.length > 2) v = v.slice(0,2) + "/" + v.slice(2,4);
+        e.target.value = v;
+      });
+    });
+  </script>
+
+  <script type="module" src="booking.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>

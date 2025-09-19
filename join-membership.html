@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cinego Membership</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="join-membership.css" />
+</head>
+<body>
+
+  <!-- 🌐 Navbar -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="index.html"><img src="cinego-logo.png" alt="Cinego Logo" class="logo-img"/></a>
+    </div>
+    <ul class="nav-links">
+      <li><a href="whatson.html">What's On</a></li>
+      <li><a href="#">Trailers</a></li>
+      <li><a href="#">Gift Cards</a></li>
+      <li><a href="#">Food & Drinks</a></li>
+    </ul>
+    <div class="nav-auth">
+      <a href="login.html" class="nav-btn">Login</a>
+    </div>
+  </nav>
+
+  <!-- Membership Tiers -->
+  <main class="membership-showcase">
+    <section class="intro">
+      <h1>Choose Your Cinego Plan</h1>
+      <p>Three tiers, packed with perks. Find your perfect fit.</p>
+    </section>
+
+    <section class="tiers-container">
+      <div class="tier-card tier-silver" data-tier="Silver" data-price="2.99">
+        <div class="ribbon">Silver</div>
+        <p class="price">£2.99 <span>/ month</span></p>
+        <ul>
+          <li>🎟️ 5% off bookings</li>
+          <li>💺 Priority seating</li>
+        </ul>
+        <button class="select-btn">Select Silver</button>
+      </div>
+
+      <div class="tier-card tier-gold" data-tier="Gold" data-price="4.99">
+        <div class="ribbon">Gold</div>
+        <p class="price">£4.99 <span>/ month</span></p>
+        <ul>
+          <li>🎟️ 10% off bookings</li>
+          <li>🍿 Free popcorn (Fridays)</li>
+          <li>🎬 Early trailer access</li>
+        </ul>
+        <button class="select-btn">Select Gold</button>
+      </div>
+
+      <div class="tier-card tier-platinum" data-tier="Platinum" data-price="7.99">
+        <div class="ribbon">Platinum</div>
+        <p class="price">£7.99 <span>/ month</span></p>
+        <ul>
+          <li>🎟️ 15% off bookings</li>
+          <li>🍿+🍹 Popcorn & drink</li>
+          <li>📅 Exclusive events</li>
+          <li>⭐ All Gold perks</li>
+        </ul>
+        <button class="select-btn">Select Platinum</button>
+      </div>
+    </section>
+
+    <section class="benefits-cta">
+      <button id="joinBtn" class="join-btn" disabled>
+        Select a plan above
+      </button>
+    </section>
+  </main>
+
+  <footer class="footer">
+    &copy; 2025 Cinego. All rights reserved.
+  </footer>
+  
+  <script src="join-membership.js"></script>
+</body>
+</html>

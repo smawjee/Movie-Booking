@@ -1,0 +1,437 @@
+/* Import Poppins font (you still need the link in HTML head) */
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom, #111, #000);
+  color: #f0f0f0;
+  font-size: 1rem;
+}
+
+main.content {
+  padding: 2.5rem;
+}
+
+h2 {
+  margin-top: 1.875rem;
+  border-bottom: 0.125rem solid #333;
+  padding-bottom: 0.5rem;
+  color: #fff;
+}
+
+/* 🌐 Navbar Styling */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to right, #0f0f0f, #1a1a1a);
+  padding: 0 2.5rem;
+  height: 4.375rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  height: 9.375rem;
+  width: auto;
+  vertical-align: middle;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.875rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links li a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.nav-links li a:hover {
+  color: #ffb100;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid #ffc107;
+  font-weight: bold;
+  color: #ffc107;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.nav-btn:hover {
+  background-color: #ffc107;
+  color: #111;
+}
+
+.nav-btn.join {
+  background-color: #ffc107;
+  color: #111;
+  margin-left: 0.25rem;
+}
+
+.nav-btn.join:hover {
+  background-color: #ffb300;
+}
+
+
+.search-icon {
+  background: transparent;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+}
+
+.search-icon:hover {
+  color: #ffb100;
+}
+
+/* 🔍 Overlay Search Bar */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 10, 0.92);
+  z-index: 1000;
+  animation: slideIn 0.4s ease forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.search-box {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #111;
+  padding: 2.5rem 1.875rem;
+  border-radius: 0.625rem;
+  box-shadow: 0 0 1.875rem rgba(0, 0, 0, 0.4);
+  width: 90%;
+  max-width: 37.5rem;
+  text-align: center;
+}
+
+.search-box input {
+  width: 80%;
+  padding: 0.875rem 1.125rem;
+  font-size: 1.125rem;
+  border: none;
+  border-radius: 0.375rem;
+  outline: none;
+  margin-bottom: 0.9375rem;
+  background-color: #222;
+  color: #fff;
+}
+
+.search-box input::placeholder {
+  color: #aaa;
+}
+
+.search-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.search-buttons button {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-buttons button:first-child {
+  background-color: #ffb100;
+  color: black;
+  font-weight: 600;
+}
+
+.search-buttons button:first-child:hover {
+  background-color: #ffa500;
+}
+
+.search-buttons button:last-child {
+  background-color: transparent;
+  color: #ccc;
+  font-size: 1.25rem;
+}
+
+.search-buttons button:last-child:hover {
+  color: white;
+}
+
+/* 🎥 Trailer Slideshow */
+.trailer-slideshow {
+  margin: 2.5rem 0;
+  position: relative;
+}
+
+.slideshow-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 0.625rem;
+}
+
+.slideshow-track {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  width: 100%;
+}
+
+.trailer-slide {
+  min-width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: #111;
+  border-radius: 0.625rem;
+}
+
+.trailer-slide iframe {
+  width: 100%;
+  max-width: 56.25rem;
+  height: 31.25rem;
+  border-radius: 0.625rem;
+}
+
+.trailer-slide p {
+  margin-top: 0.625rem;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #fff;
+  text-align: center;
+}
+
+/* Slideshow Arrows */
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  font-size: 2rem;
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  z-index: 1;
+  border-radius: 50%;
+}
+
+.left-arrow {
+  left: 1.25rem;
+}
+
+.right-arrow {
+  right: 1.25rem;
+}
+
+.nav-arrow:hover {
+  background: #ffb100;
+  color: black;
+}
+
+/* 🎟️ Book Now Button */
+.book-btn {
+  background-color: #ffb100;
+  color: #111;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 1.5625rem;
+  margin-top: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0.25rem 0.625rem rgba(255, 177, 0, 0.4);
+}
+
+.book-btn:hover {
+  background-color: #ffa500;
+  color: white;
+}
+
+/* 🎬 Movie Grid */
+.movie-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.movie-grid div {
+  width: 9.375rem;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.movie-grid div:hover {
+  transform: scale(1.05);
+}
+
+.movie-grid img {
+  width: 100%;
+  border-radius: 0.375rem;
+}
+
+.certification {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #ccc;
+}
+
+.rating-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 3.125rem;
+  color: white;
+  background-color: #555;
+  margin-top: 0.375rem;
+}
+
+/* 🔻 Footer Section */
+.site-footer {
+  background-color: #111;
+  color: #ccc;
+  padding: 2.5rem 1.25rem;
+  font-family: 'Poppins', sans-serif;
+  margin-top: 3.75rem;
+}
+
+.footer-columns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.875rem;
+  max-width: 75rem;
+  margin: auto;
+}
+
+.footer-columns > div {
+  flex: 1 1 12.5rem;
+}
+
+.site-footer h4 {
+  font-weight: 600;
+  margin-bottom: 0.9375rem;
+  color: #fff;
+}
+
+.site-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-footer ul li {
+  margin-bottom: 0.625rem;
+}
+
+.site-footer ul li a {
+  color: #ccc;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.site-footer ul li a:hover {
+  color: #e50914;
+}
+
+.social-icons {
+  display: flex;
+  gap: 0.9375rem;
+  margin-top: 0.625rem;
+}
+
+.social-icons a {
+  color: #ccc;
+  font-size: 1.25rem;
+  transition: color 0.3s;
+}
+
+.social-icons a:hover {
+  color: #e50914;
+}
+
+.cinego-search-list {
+  position: absolute;
+  background: #111;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: 0 0 6px 6px;
+  border-top: 1px solid #333;
+  z-index: 9999;
+  font-family: 'Poppins', sans-serif;
+}
+
+.cinego-suggestion {
+  padding: 12px 16px;
+  color: #fff;
+  cursor: pointer;
+  border-bottom: 1px solid #222;
+  transition: background 0.3s ease;
+}
+
+.cinego-suggestion:hover {
+  background: #222;
+}
+
+.cinego-suggestion .highlight {
+  color: orange;
+  font-weight: bold;
+}
+
+.welcome-msg {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.2;
+}

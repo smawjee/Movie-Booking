@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cinego App</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 🌐 Navbar -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="index.html">
+        <img src="cinego-logo.png" alt="Cinego Logo" class="logo-img"/>
+      </a>
+    </div>
+    <ul class="nav-links">
+
+      <li><a href="whatson.html">What's On</a></li>
+       <li><a href="trailers.html">Trailers</a></li>
+      <li><a href="Manage-membership.html">Membership</a></li>
+       <li><a href="food-drink.html">Food & Drinks</a></li>
+    </ul>
+    <div class="nav-auth">
+      <a href="login.html" class="nav-btn">Login</a>
+      <a href="join-membership.html" class="nav-btn join">Join</a>
+    </div>
+
+    <!-- 🔍 Search Button (Moved Outside) -->
+    <button id="openSearchBtn" class="search-icon" aria-label="Search">
+      <i class="fas fa-search"></i>
+    </button>
+  </nav>
+
+  <!-- 🎥 Trailer Slideshow -->
+  <section class="trailer-slideshow">
+    <div class="slideshow-wrapper">
+      <button class="nav-arrow left-arrow" onclick="prevSlide()">&#10094;</button>
+      <div class="slideshow-track" id="trailerSlideshow"></div>
+      <button class="nav-arrow right-arrow" onclick="nextSlide()">&#10095;</button>
+    </div>
+  </section>
+
+  <!-- 🔍 Search Overlay -->
+  <div id="searchOverlay" class="overlay">
+    <div class="search-box">
+      <input id="searchInput" placeholder="Search for a movie, offer, or snack..." />
+      <div class="search-buttons">
+        <button onclick="searchMovies()" aria-label="Search"><i class="fas fa-search"></i></button>
+        <button id="closeSearchBtn" aria-label="Close"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎬 Main Content -->
+  <main class="content">
+    <section>
+      <h2>Now Playing</h2>
+      <div id="nowPlaying" class="movie-grid"></div>
+    </section>
+
+    <section>
+      <h2>Upcoming Movies</h2>
+      <div id="upcoming" class="movie-grid"></div>
+    </section>
+  </main>
+
+  <!-- 🔻 Footer -->
+  <footer class="site-footer">
+    <div class="footer-columns">
+      <div>
+        <h4>Get In Touch</h4>
+        <ul>
+          <li><a href="#">FAQs</a></li>
+          <li><a href="#">Feedback</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>About</h4>
+        <ul>
+          <li><a href="food-drink.html">Food & Drinks</a></li>
+          <li><a href="#">Offers</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms & Conditions</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Social</h4>
+        <div class="social-icons">
+          <a href="#"><i class="fab fa-facebook"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    document.getElementById('openSearchBtn').onclick = () =>
+      document.getElementById('searchOverlay').style.display = 'flex';
+
+    document.getElementById('closeSearchBtn').onclick = () =>
+      document.getElementById('searchOverlay').style.display = 'none';
+  </script>
+
+  <!-- Script order: -->
+  <script src="main.js" defer></script>
+  <script src="searchmovies.js"></script>
+  <script src="trailers.js" defer></script>
+  <script src="auth.js"></script>
+</body>
+</html>

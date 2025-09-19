@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Membership Payment – Cinego</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="join-membership-payment.css" />
+</head>
+<body>
+
+  <!-- 🔹 Navbar -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="index.html">
+        <img src="cinego-logo.png" alt="Cinego Logo" class="logo-img"/>
+      </a>
+    </div>
+    <ul class="nav-links">
+      <li><a href="whatson.html">What's On</a></li>
+      <li><a href="#">Trailers</a></li>
+      <li><a href="#">Gift Cards</a></li>
+      <li><a href="#">Food & Drinks</a></li>
+    </ul>
+    <div class="nav-auth">
+      <a href="login.html" class="nav-btn">Login</a>
+    </div>
+  </nav>
+
+  <!-- 💳 Payment Section -->
+  <main class="payment-container">
+    <h2 id="paymentTitle">🧾 Confirm Membership Payment</h2>
+    <p class="payment-subtext" id="paymentSubtext">
+      Become a Cinego Member for <strong>£4.99/month</strong> and unlock exclusive perks!
+    </p>
+
+    <form class="payment-form" id="membershipPaymentForm">
+      <div class="form-group">
+        <label for="cardNumber">Card Number</label>
+        <input type="text" id="cardNumber" maxlength="19" placeholder="1234 5678 9012 3456" required />
+      </div>
+      <div class="form-inline">
+        <div class="form-group half">
+          <label for="expiry">Expiry</label>
+          <input type="text" id="expiry" maxlength="5" placeholder="MM/YY" required />
+        </div>
+        <div class="form-group half">
+          <label for="cvv">CVV</label>
+          <input type="text" id="cvv" maxlength="4" placeholder="123" required />
+        </div>
+      </div>
+      <button type="submit" class="pay-btn" id="payBtn">
+        Pay £4.99 &amp; Join
+      </button>
+    </form>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const cardInput   = document.getElementById("cardNumber");
+      const expiryInput = document.getElementById("expiry");
+      const cvvInput    = document.getElementById("cvv");
+      const payBtn      = document.getElementById("payBtn");
+      const subtext     = document.getElementById("paymentSubtext");
+      const form        = document.getElementById("membershipPaymentForm");
+
+      // Auto‑format card & expiry
+      cardInput.addEventListener("input", e => {
+        e.target.value = e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
+      });
+      expiryInput.addEventListener("input", e => {
+        let v = e.target.value.replace(/\D/g, "");
+        if (v.length > 2) v = v.slice(0,2) + "/" + v.slice(2,4);
+        e.target.value = v;
+      });
+
+      // Load plan & profile
+      const planJson = localStorage.getItem("selectedMembershipPlan");
+      const profileJson = localStorage.getItem("tempUserProfile");
+      if (!planJson || !profileJson) {
+        alert("Missing plan or profile—please start over.");
+        window.location.href = "join-membership.html";
+        return;
+      }
+      const { tier, price } = JSON.parse(planJson);
+
+      // Update UI
+      subtext.innerHTML = 
+        `Become a Cinego <strong>${tier}</strong> Member for <strong>£${price}/month</strong> and unlock exclusive perks!`;
+      payBtn.textContent = `Pay £${price} & Join ${tier}`;
+
+      // Handle form submission
+      form.addEventListener("submit", e => {
+        e.preventDefault();
+        const card   = cardInput.value.trim();
+        const expiry = expiryInput.value.trim();
+        const cvv    = cvvInput.value.trim();
+        if (!card || !expiry || !cvv) {
+          alert("Please fill in all payment details.");
+          return;
+        }
+
+        const membershipId = "CINE" + Date.now();
+        const profile      = JSON.parse(profileJson);
+        const newUser = {
+          ...profile,
+          user: profile.email,
+          membershipId,
+          isMember: true,
+          cardNumber: card,
+          expiry: expiry,
+          cvv: cvv
+        };
+
+        const users = JSON.parse(localStorage.getItem("cinegoUsers")) || [];
+        users.push(newUser);
+        localStorage.setItem("cinegoUsers", JSON.stringify(users));
+
+        // ✅ Save only last 4 digits and correct format
+        const last4 = card.replace(/\D/g, '').slice(-4);
+        const membershipCard = {
+          card: last4,
+          expiry: expiry
+        };
+        localStorage.setItem("membershipCard", JSON.stringify(membershipCard));
+        localStorage.setItem("paidMembership", "true");
+
+        // Cleanup
+        localStorage.removeItem("tempUserProfile");
+        localStorage.removeItem("selectedMembershipPlan");
+
+        alert(`✅ Payment successful!\nWelcome, ${newUser.firstName}.\nYour Membership ID is ${membershipId}`);
+        window.location.href = "login.html";
+      });
+    });
+  </script>
+
+</body>
+</html>
