@@ -1,0 +1,4 @@
+frontend-dist/
+node_modules/
+.codex-tmp/
+package-lock.json

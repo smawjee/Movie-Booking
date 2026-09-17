@@ -1,216 +1,40 @@
+# Cinego
 
----
+Cinego is a premium-dark cinema booking application built with React, TypeScript, Vite, TanStack Router and TanStack Query. Express provides the secure API boundary for TMDB, booking operations, the optional OpenAI assistant and ticket delivery.
 
-# 🎬 Cinego – Cinema Booking Web Application
+## Run locally
 
-Cinego is a front-end cinema booking system that allows users to browse movies, select seats, apply membership discounts, and complete ticket purchases. The system includes membership tiers, booking management, and QR-code ticket confirmations.
+```powershell
+Copy-Item .env.example .env
+npm install
+npm run build
+npm start
+```
 
-This project was built using **HTML, CSS, and JavaScript** with **localStorage used to simulate a backend database**.
+Open `http://localhost:5000`. For frontend hot reload, run `npm run dev` in a second terminal and open the Vite address.
 
----
+Without external credentials the application remains usable: cinema inventory uses deterministic in-memory demo data, the assistant uses grounded guided responses, and ticket email produces a local preview URL.
 
-# 🚀 Features
+## Connect services
 
-## 🎟️ Movie Booking
+1. [Create a Supabase project](https://supabase.com/dashboard/new) and run `supabase/migrations/20260910_initial_cinego.sql` in its SQL editor.
+2. Copy `.env.example` to `.env` and fill in the Supabase URL, anon key and service-role key. Never expose the service-role key in `VITE_*` variables.
+3. In Supabase Auth, enable Email and Google providers. Set the Site URL to `http://localhost:5000` and allow `http://localhost:5000/auth/callback`; see [Supabase redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).
+4. Create a [TMDB API key](https://www.themoviedb.org/settings/api) for live movie content. The built-in catalogue remains available without it.
+5. Create an [OpenAI API key](https://platform.openai.com/api-keys) to enable AI responses. Cinebot retains its guided mode without it.
+6. For Gmail delivery, enable 2-Step Verification and create a [Google app password](https://support.google.com/accounts/answer/185833). Put the Gmail address in `SMTP_USER`, the 16-character app password in `SMTP_PASS`, and restart the server.
+7. Add Langfuse keys for production tracing if required. If Gmail is omitted, the ticket API deliberately reports `preview`, never a false `sent` state.
 
-Users can view movie details including:
+Vite reads its public Supabase values from the root `.env` through `envDir`. Restart both `npm start` and `npm run dev` after changing environment values. Never paste credentials into chat or commit `.env`.
 
-* Title
-* Poster
-* Runtime
-* Language
-* Format
+Payment remains a simulation. Only the card brand, last four digits, transaction reference, amount, status and timestamp are retained. Full card numbers, CVVs and DOBs are discarded.
 
-Users can also:
+## Quality checks
 
-* Select seats using an **interactive seat map**
-* View selected seats and total price before checkout
-* See ticket price update dynamically
+```powershell
+npm test
+npm run check
+npm audit --omit=dev
+```
 
----
-
-## 🪑 Seat Selection
-
-The seat map includes:
-
-* Available seats
-* Selected seats
-* Occupied seats
-
-Premium seat categories:
-
-| Seat Type       | Description            |
-| --------------- | ---------------------- |
-| Lux             | Premium cinema seats   |
-| Lux Saver       | Discount premium seats |
-| Lux Super Saver | Lowest premium price   |
-
-Seat pricing updates dynamically based on selections.
-
----
-
-## 💳 Payment System
-
-Users can:
-
-* Enter payment details
-* Review total price
-* Confirm booking
-
-The payment modal includes:
-
-* Card number
-* Expiry date
-* CVV
-* Optional membership code
-
-⚠️ Payments are **simulated** and not processed through a real payment gateway.
-
----
-
-## ⭐ Membership System
-
-Users can purchase Cinego memberships with different tiers:
-
-| Tier     | Discount |
-| -------- | -------- |
-| Silver   | 5%       |
-| Gold     | 10%      |
-| Platinum | 15%      |
-
-Membership benefits include:
-
-* Automatic discount applied during checkout
-* Unique membership ID
-* Membership tier displayed in the navigation dropdown
-
----
-
-## 👤 User Accounts
-
-Users can:
-
-* Create an account
-* Log in
-* View their membership ID
-* View membership tier
-* Manage bookings
-
-User information is stored in **localStorage**.
-
-Example stored user object:
-
-{
-"firstName": "John",
-"email": "[john@email.com](mailto:john@email.com)",
-"membershipId": "CINE123456",
-"membershipTier": "Gold"
-}
-
----
-
-# 🎟️ Ticket Confirmation
-
-After payment confirmation:
-
-* Booking details are saved to **localStorage**
-* User is redirected to **confirmation.html**
-
-A ticket is generated showing:
-
-* Movie
-* Seats
-* Time
-* Screen
-* Membership discount applied
-* QR code for entry
-
----
-
-# 🗂️ Project Structure
-
-cinego/
-
-index.html
-booking.html
-confirmation.html
-
-join.html
-login.html
-
-join-membership.html
-join-membership-payment.html
-
-booking.js
-paymentModal.js
-auth.js
-join.js
-
-booking.css
-auth.css
-style.css
-
-cinego-logo.png
-
----
-
-# ⚙️ How It Works
-
-The application uses **localStorage** to simulate backend functionality.
-
-Key storage keys include:
-
-| Key               | Purpose                    |
-| ----------------- | -------------------------- |
-| cinegoUsers       | Stores registered users    |
-| loggedInUser      | Current logged-in user     |
-| cinegoBookings    | All bookings               |
-| lastBooking       | Used for confirmation page |
-| tempMovieTitle    | Movie selected for booking |
-| tempSelectedSeats | Seats chosen by the user   |
-
----
-
-# 🔐 Security Notes
-
-This project is **front-end only**, so:
-
-* Payment processing is simulated
-* Card details are not securely stored
-* CVV is never saved
-* Membership discounts are calculated locally
-
-In a production system this would be handled by:
-
-* Secure backend APIs
-* Payment providers (Stripe, PayPal, etc.)
-* Authentication systems
-* Encrypted databases
-
----
-
-# 🛠️ Technologies Used
-
-* HTML5
-* CSS3
-* JavaScript (ES6 Modules)
-* localStorage
-* QRious (QR code generation)
-* SeedRandom (deterministic seat simulation)
-
----
-
-# 📌 Future Improvements
-
-Potential enhancements include:
-
-* Backend integration (Node.js / Firebase)
-* Real payment processing
-* Seat locking system
-* User booking history
-* Mobile responsive layout
-* Admin movie management dashboard
-* Email ticket confirmation
-
----
-
+The API health endpoint is `GET /api/health`. It reports whether database, assistant and email integrations are running live or in fallback mode.
