@@ -13,6 +13,13 @@ app.use("/api/movies", movieRoutes);
 app.use("/api", require("./routes/cinema"));
 app.use("/api", require("./routes/tickets"));
 app.use("/api", require("./routes/assistant"));
+
+const reactDist = path.join(__dirname, "..", "frontend-dist");
+const legacyFrontend = path.join(__dirname, "..", "frontend");
+const staticRoot = fs.existsSync(path.join(reactDist, "index.html"))
+  ? reactDist
+  : legacyFrontend;
+
 app.get("/api/health", (req, res) => {
   const { supabaseConfigured } = require("../services/supabaseClient");
   const integrations = {
@@ -28,6 +35,7 @@ app.get("/api/health", (req, res) => {
       process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY,
     ),
     gmail: Boolean(process.env.SMTP_USER && process.env.SMTP_PASS),
+    stripe: Boolean(process.env.STRIPE_SECRET_KEY),
   };
   res.json({
     ok: true,
@@ -41,11 +49,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-const reactDist = path.join(__dirname, "..", "frontend-dist");
-const legacyFrontend = path.join(__dirname, "..", "frontend");
-const staticRoot = fs.existsSync(path.join(reactDist, "index.html"))
-  ? reactDist
-  : legacyFrontend;
+// Static file serving + SPA fallback are only needed when this app runs as
+// a standalone Node server (local dev, or any non-Vercel host). On Vercel the
+// built frontend is served directly from its CDN per vercel.json, and this
+// Express app only ever receives /api/* requests there.
 app.use(express.static(staticRoot));
 
 app.get("/", (req, res) => {
@@ -57,7 +64,11 @@ app.get("/{*path}", (req, res, next) => {
   res.sendFile(path.join(staticRoot, "index.html"));
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`),
-);
+module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () =>
+    console.log(`🚀 Server running on http://localhost:${PORT}`),
+  );
+}

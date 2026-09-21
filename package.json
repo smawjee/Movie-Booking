@@ -19,6 +19,8 @@
   "description": "",
   "dependencies": {
     "@langfuse/tracing": "^5.11.1",
+    "@stripe/react-stripe-js": "^6.10.0",
+    "@stripe/stripe-js": "^9.16.0",
     "@supabase/supabase-js": "^2.116.0",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.35",
@@ -27,6 +29,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.7.0",
+    "lucide-react": "^1.47.0",
     "node-fetch": "^2.7.0",
     "nodemailer": "^10.0.3",
     "openai": "^7.15.0",
@@ -34,6 +37,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "stripe": "^22.6.2",
     "zod": "^4.6.2"
   },
   "devDependencies": {

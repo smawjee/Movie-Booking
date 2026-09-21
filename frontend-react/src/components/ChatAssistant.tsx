@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Sparkles, RotateCcw, X } from "lucide-react";
 type Message = { role: "user" | "assistant"; text: string; draftUrl?: string };
 const starters = [
   "Find a family film tomorrow",
@@ -81,7 +82,7 @@ export function ChatAssistant() {
         onClick={() => setOpen(true)}
         aria-label="Open booking assistant"
       >
-        ✦ <span>Ask Cinebot</span>
+        <Sparkles size={16} aria-hidden="true" /> <span>Ask Cinebot</span>
       </button>
       {open && (
         <div className="chat-layer">
@@ -111,10 +112,10 @@ export function ChatAssistant() {
                   onClick={() => setMessages(messages.slice(0, 1))}
                   aria-label="Reset conversation"
                 >
-                  ↻
+                  <RotateCcw size={16} aria-hidden="true" />
                 </button>
                 <button onClick={() => setOpen(false)} aria-label="Close">
-                  ×
+                  <X size={20} aria-hidden="true" />
                 </button>
               </div>
             </header>

@@ -1,5 +1,11 @@
 import { z } from "zod";
-import type { Booking, Movie, Screening } from "../types";
+import type {
+  Booking,
+  MembershipPlan,
+  Movie,
+  Reservation,
+  Screening,
+} from "../types";
 const json = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -15,10 +21,20 @@ export const api = {
   upcoming: () => json<Movie[]>("/api/movies/upcoming"),
   screenings: (params: URLSearchParams) =>
     json<Screening[]>(`/api/screenings?${params}`),
+  advanceScreenings: (params: URLSearchParams) =>
+    json<Screening[]>(`/api/screenings/upcoming?${params}`),
   seats: (screeningId: string) => json(`/api/screenings/${screeningId}/seats`),
   reserve: (body: unknown) =>
-    json("/api/reservations", { method: "POST", body: JSON.stringify(body) }),
-  pay: (body: unknown) =>
+    json<Reservation>("/api/reservations", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  createPaymentIntent: (reservationId: string, email: string) =>
+    json<{ clientSecret: string }>(
+      `/api/reservations/${reservationId}/payment-intent`,
+      { method: "POST", body: JSON.stringify({ email }) },
+    ),
+  pay: (body: { reservationId: string; email: string; paymentIntentId: string }) =>
     json<Booking>("/api/bookings/confirm", {
       method: "POST",
       body: JSON.stringify(body),
@@ -37,7 +53,17 @@ export const api = {
       `/api/tickets/${reference}/resend`,
       { method: "POST" },
     ),
-  membershipPay: (body: unknown) =>
+  membershipPlans: () => json<MembershipPlan[]>("/api/memberships/plans"),
+  membershipPaymentIntent: (plan: string, email?: string) =>
+    json<{ clientSecret: string }>("/api/memberships/payment-intent", {
+      method: "POST",
+      body: JSON.stringify({ plan, email }),
+    }),
+  membershipPay: (body: {
+    plan: string;
+    email?: string;
+    paymentIntentId: string;
+  }) =>
     json("/api/memberships/checkout", {
       method: "POST",
       body: JSON.stringify(body),

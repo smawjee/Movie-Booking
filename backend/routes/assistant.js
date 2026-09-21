@@ -3,7 +3,7 @@ const { z } = require("zod");
 const rateLimit = require("express-rate-limit").rateLimit;
 const OpenAI = require("openai").default;
 const { getNowPlaying } = require("../../services/tmdbService");
-const store = require("../../services/cinemaStore");
+const store = require("../../services/store");
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 60_000, limit: 15 });
 const sensitive =
@@ -41,7 +41,7 @@ async function context(message) {
   const format = ["4dx", "imax", "dolby", "screenx", "3d"].find((x) =>
     message.toLowerCase().includes(x),
   );
-  const all = store.buildScreenings(movies, { cinema: city, date, format });
+  const all = await store.buildScreenings(movies, { cinema: city, date, format });
   return { movies, screenings: all.slice(0, 40), city, date };
 }
 function fallback(message, data) {
@@ -99,7 +99,7 @@ async function live(message, history, data) {
     { role: "user", content: message },
   ];
   let response = await client.responses.create({
-    model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
     instructions:
       "You are Cinebot. Use only tool results for films, screenings, prices and ratings. Never request payment data, passwords, DOB or ID. You may recommend and prepare a draft but cannot reserve seats, confirm age or take payment. Be concise.",
     input,
@@ -118,7 +118,7 @@ async function live(message, history, data) {
       ),
     }));
     response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       instructions:
         "Answer only from the tool data. Include a concise recommendation.",
       input: [...input, ...response.output, ...outputs],
@@ -128,6 +128,20 @@ async function live(message, history, data) {
   }
   const result = fallback(message, data);
   return { ...result, message: response.output_text || result.message };
+}
+// Prefer the live OpenAI-backed assistant when configured, but never let an
+// OpenAI-side failure (no credits, rate limit, outage) take the whole
+// assistant down — fall back to the rule-based responder so Cinebot always
+// answers something useful.
+async function respond(message, history, data) {
+  if (!process.env.OPENAI_API_KEY)
+    return { ...fallback(message, data), mode: "guided-fallback" };
+  try {
+    return { ...(await live(message, history, data)), mode: "ai" };
+  } catch (error) {
+    console.error("[assistant:live]", error.message);
+    return { ...fallback(message, data), mode: "guided-fallback" };
+  }
 }
 router.post("/assistant/chat", limiter, async (req, res) => {
   const parsed = schema.safeParse(req.body);
@@ -140,13 +154,7 @@ router.post("/assistant/chat", limiter, async (req, res) => {
     });
   try {
     const data = await context(parsed.data.message);
-    const result = process.env.OPENAI_API_KEY
-      ? await live(parsed.data.message, parsed.data.history, data)
-      : fallback(parsed.data.message, data);
-    res.json({
-      ...result,
-      mode: process.env.OPENAI_API_KEY ? "ai" : "guided-fallback",
-    });
+    res.json(await respond(parsed.data.message, parsed.data.history, data));
   } catch (error) {
     console.error("[assistant]", error.message);
     res.status(502).json({
@@ -171,16 +179,11 @@ router.post("/assistant/stream", limiter, async (req, res) => {
   try {
     emit("progress", { message: "Checking live Cinego showtimes…" });
     const data = await context(parsed.data.message);
-    const result = process.env.OPENAI_API_KEY
-      ? await live(parsed.data.message, parsed.data.history, data)
-      : fallback(parsed.data.message, data);
+    const result = await respond(parsed.data.message, parsed.data.history, data);
     const words = result.message.split(/(\s+)/);
     for (let index = 0; index < words.length; index += 5)
       emit("delta", { text: words.slice(index, index + 5).join("") });
-    emit("complete", {
-      ...result,
-      mode: process.env.OPENAI_API_KEY ? "ai" : "guided-fallback",
-    });
+    emit("complete", result);
     res.end();
   } catch (error) {
     emit("error", {

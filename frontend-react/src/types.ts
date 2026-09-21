@@ -43,11 +43,29 @@ export interface Seat {
 }
 export interface PaymentSummary {
   reference: string;
-  brand: "visa" | "mastercard" | "amex" | "unknown";
+  brand: string;
   last4: string;
   amountPence: number;
-  status: "simulated";
+  status: "paid";
   createdAt: string;
+  stripePaymentIntentId?: string;
+}
+export interface Reservation {
+  id: string;
+  screeningId: string;
+  seatIds: string[];
+  ageConfirmation: AgeConfirmation;
+  expiresAt: string;
+  status: "held";
+}
+export interface MembershipPlan {
+  id: "Silver" | "Gold" | "Platinum";
+  name: string;
+  pricePence: number;
+  discountPercent: number;
+  tag?: string;
+  style?: "featured" | "premium";
+  perks: string[];
 }
 export interface AgeConfirmation {
   rating: string;

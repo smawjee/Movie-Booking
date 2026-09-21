@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { stripe, stripeConfigured } = require("./stripeClient");
 const experiences = {
   standard: {
     id: "standard",
@@ -166,7 +167,10 @@ function expireReservations() {
     if (r.status === "held" && new Date(r.expiresAt) < new Date())
       r.status = "expired";
 }
-function confirm({ reservationId, email, payment }) {
+// Shared by confirm() and createPaymentIntent() so the charge amount and the
+// final booking total can never drift apart — neither ever trusts a
+// client-supplied amount.
+function getReservationTotal(reservationId) {
   expireReservations();
   const reservation = reservations.get(reservationId);
   if (!reservation || reservation.status !== "held")
@@ -184,14 +188,36 @@ function confirm({ reservationId, email, payment }) {
         },
     );
   const totalPence = seats.reduce((s, x) => s + x.pricePence, 0);
+  return { reservation, screening, seats, totalPence };
+}
+
+async function createPaymentIntent(reservationId, email) {
+  const { totalPence } = getReservationTotal(reservationId);
+  if (!stripeConfigured)
+    throw Object.assign(new Error("Payments are not configured"), {
+      status: 500,
+    });
+  const intent = await stripe.paymentIntents.create({
+    amount: totalPence,
+    currency: "gbp",
+    payment_method_types: ["card"],
+    metadata: { reservationId, email, kind: "booking" },
+  });
+  return { clientSecret: intent.client_secret };
+}
+
+function confirm({ reservationId, email, payment }) {
+  const { reservation, screening, seats, totalPence } =
+    getReservationTotal(reservationId);
   const reference = `CG-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
   const safePayment = {
     reference: payment.reference,
     brand: payment.brand,
     last4: payment.last4,
     amountPence: totalPence,
-    status: "simulated",
-    createdAt: new Date().toISOString(),
+    status: payment.status,
+    createdAt: payment.createdAt || new Date().toISOString(),
+    stripePaymentIntentId: payment.stripePaymentIntentId,
   };
   const booking = {
     reference,
@@ -207,26 +233,96 @@ function confirm({ reservationId, email, payment }) {
   reservation.status = "confirmed";
   return booking;
 }
+const membershipPlans = [
+  {
+    id: "Silver",
+    name: "Silver",
+    pricePence: 499,
+    discountPercent: 5,
+    perks: [
+      "5% off every ticket",
+      "Standard seat selection included",
+      "Birthday reward voucher",
+    ],
+  },
+  {
+    id: "Gold",
+    name: "Gold",
+    pricePence: 899,
+    discountPercent: 10,
+    tag: "Most popular",
+    style: "featured",
+    perks: [
+      "10% off tickets and food",
+      "48-hour priority booking window",
+      "1 free premium seat upgrade / month",
+    ],
+  },
+  {
+    id: "Platinum",
+    name: "Platinum",
+    pricePence: 1499,
+    discountPercent: 15,
+    tag: "Best value",
+    style: "premium",
+    perks: [
+      "15% off tickets and food",
+      "72-hour priority booking window",
+      "2 free premium upgrades / month",
+      "Free large popcorn monthly",
+    ],
+  },
+];
+
+async function createMembershipPaymentIntent(plan, email) {
+  const found = membershipPlans.find((p) => p.id === plan);
+  if (!found)
+    throw Object.assign(new Error("Unknown membership plan"), { status: 400 });
+  if (!stripeConfigured)
+    throw Object.assign(new Error("Payments are not configured"), {
+      status: 500,
+    });
+  const intent = await stripe.paymentIntents.create({
+    amount: found.pricePence,
+    currency: "gbp",
+    payment_method_types: ["card"],
+    metadata: { plan, email: email || "", kind: "membership" },
+  });
+  return { clientSecret: intent.client_secret };
+}
+
 function checkoutMembership({ plan, payment, email }) {
-  const prices = { Silver: 499, Gold: 899, Platinum: 1499 };
-  if (!prices[plan])
+  const found = membershipPlans.find((p) => p.id === plan);
+  if (!found)
     throw Object.assign(new Error("Unknown membership plan"), { status: 400 });
   const item = {
     id: uuid(),
     plan,
     email: email || null,
     status: "active",
-    pricePence: prices[plan],
+    pricePence: found.pricePence,
     renewsAt: new Date(Date.now() + 30 * 86400000).toISOString(),
     payment: {
       reference: payment.reference,
       brand: payment.brand,
       last4: payment.last4,
-      status: "simulated",
+      status: payment.status,
+      stripePaymentIntentId: payment.stripePaymentIntentId,
     },
   };
   memberships.push(item);
   return item;
+}
+function publicBooking(booking) {
+  const { email, payment, ...rest } = booking;
+  return rest;
+}
+async function getBooking(reference) {
+  return bookings.get(reference) || null;
+}
+async function updateDeliveryStatus(reference, result) {
+  const booking = bookings.get(reference);
+  if (booking) booking.emailDelivery = result;
 }
 module.exports = {
   experiences,
@@ -234,7 +330,13 @@ module.exports = {
   getScreening,
   getSeats,
   reserve,
+  createPaymentIntent,
   confirm,
   bookings,
+  getBooking,
+  updateDeliveryStatus,
+  publicBooking,
+  membershipPlans,
+  createMembershipPaymentIntent,
   checkoutMembership,
 };
