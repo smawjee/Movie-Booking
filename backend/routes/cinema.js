@@ -4,6 +4,8 @@ const rateLimit = require("express-rate-limit").rateLimit;
 const { getNowPlaying, getUpcoming } = require("../../services/tmdbService");
 const store = require("../../services/store");
 const { stripe, stripeConfigured } = require("../../services/stripeClient");
+const { getAuthedUser } = require("../../services/auth");
+const { supabaseConfigured } = require("../../services/supabaseClient");
 const router = express.Router();
 const bookingLookupLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -85,11 +87,27 @@ router.post("/reservations", async (req, res) => {
 });
 router.post("/reservations/:id/payment-intent", async (req, res) => {
   const parsed = z
-    .object({ email: z.string().email() })
+    .object({ email: z.string().email(), promoCode: z.string().optional() })
     .safeParse(req.body);
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid request" });
   try {
+    if (parsed.data.promoCode) {
+      const discount = await store.getActivePromotion(parsed.data.promoCode);
+      if (!discount)
+        return res
+          .status(400)
+          .json({ error: "That promo code is invalid or has expired" });
+      return res
+        .status(201)
+        .json(
+          await store.createPaymentIntent(
+            req.params.id,
+            parsed.data.email,
+            discount,
+          ),
+        );
+    }
     res
       .status(201)
       .json(
@@ -139,6 +157,8 @@ router.post("/bookings/confirm", async (req, res) => {
         reservationId: parsed.data.reservationId,
         email: parsed.data.email,
         payment,
+        discountPercent: Number(intent.metadata.discountPercent || 0),
+        promoCode: intent.metadata.promoCode || null,
       }),
     );
   } catch (e) {
@@ -154,22 +174,41 @@ router.get("/bookings/:reference", bookingLookupLimiter, async (req, res) => {
 router.get("/memberships/plans", (req, res) => {
   res.json(store.membershipPlans);
 });
+// Membership purchase requires a signed-in account (memberships persist
+// against auth.users.id) — these three routes all gate on that first.
 router.post("/memberships/payment-intent", async (req, res) => {
+  if (!supabaseConfigured)
+    return res
+      .status(503)
+      .json({ error: "Memberships require Supabase to be configured" });
+  const user = await getAuthedUser(req);
+  if (!user)
+    return res
+      .status(401)
+      .json({ error: "Sign in to start a membership purchase" });
   const parsed = z
     .object({
-      plan: z.enum(["Silver", "Gold", "Platinum"]),
-      email: z.string().email().optional(),
+      plan: z.enum(["silver", "gold", "platinum"]),
+      promoCode: z.string().optional(),
     })
     .safeParse(req.body);
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid request" });
   try {
+    const discount = parsed.data.promoCode
+      ? await store.getActivePromotion(parsed.data.promoCode)
+      : null;
+    if (parsed.data.promoCode && !discount)
+      return res
+        .status(400)
+        .json({ error: "That promo code is invalid or has expired" });
     res
       .status(201)
       .json(
         await store.createMembershipPaymentIntent(
+          user.id,
           parsed.data.plan,
-          parsed.data.email,
+          discount,
         ),
       );
   } catch (e) {
@@ -177,10 +216,18 @@ router.post("/memberships/payment-intent", async (req, res) => {
   }
 });
 router.post("/memberships/checkout", async (req, res) => {
+  if (!supabaseConfigured)
+    return res
+      .status(503)
+      .json({ error: "Memberships require Supabase to be configured" });
+  const user = await getAuthedUser(req);
+  if (!user)
+    return res
+      .status(401)
+      .json({ error: "Sign in to complete a membership purchase" });
   const parsed = z
     .object({
-      plan: z.enum(["Silver", "Gold", "Platinum"]),
-      email: z.string().email().optional(),
+      plan: z.enum(["silver", "gold", "platinum"]),
       paymentIntentId: z.string().min(1),
     })
     .safeParse(req.body);
@@ -199,24 +246,44 @@ router.post("/memberships/checkout", async (req, res) => {
       return res
         .status(400)
         .json({ error: "Payment does not match this plan" });
+    if (intent.metadata.userId !== user.id)
+      return res
+        .status(400)
+        .json({ error: "Payment does not match this account" });
     const card = intent.latest_charge?.payment_method_details?.card;
     const payment = {
       reference: intent.id,
       brand: card?.brand || "unknown",
       last4: card?.last4 || "0000",
+      amountPence: intent.amount_received,
       status: "paid",
       stripePaymentIntentId: intent.id,
     };
     res.status(201).json(
       await store.checkoutMembership({
+        userId: user.id,
         plan: parsed.data.plan,
-        email: parsed.data.email,
         payment,
+        promoCode: intent.metadata.promoCode || null,
+        discountPence: Number(intent.metadata.discountPence || 0),
       }),
     );
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
   }
+});
+router.get("/memberships/mine", async (req, res) => {
+  if (!supabaseConfigured) return res.json(null);
+  const user = await getAuthedUser(req);
+  if (!user) return res.status(401).json({ error: "Sign in required" });
+  try {
+    res.json(await store.getMembership(user.id));
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
+  }
+});
+router.get("/offers/active", async (req, res) => {
+  res.json(await store.getActiveOffers());
 });
 router.get("/experiences", (req, res) =>
   res.json(Object.values(store.experiences)),

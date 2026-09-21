@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { Search, CircleUserRound } from "lucide-react";
 import { ChatAssistant } from "./components/ChatAssistant";
+import { OffersBanner } from "./components/OffersBanner";
 
 export function Shell() {
   const [siteSearch, setSiteSearch] = useState("");
@@ -45,6 +46,7 @@ export function Shell() {
           <CircleUserRound size={18} aria-hidden="true" />
         </Link>
       </header>
+      <OffersBanner />
       <main id="content">
         <Outlet />
       </main>

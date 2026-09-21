@@ -1,11 +1,15 @@
 import { z } from "zod";
 import type {
   Booking,
+  Membership,
   MembershipPlan,
   Movie,
+  Offer,
+  PaymentIntentResponse,
   Reservation,
   Screening,
 } from "../types";
+import { supabase } from "./supabase";
 const json = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -15,6 +19,11 @@ const json = async <T>(url: string, init?: RequestInit): Promise<T> => {
   if (!response.ok)
     throw new Error(body.error || `Request failed (${response.status})`);
   return body as T;
+};
+const authHeaders = async (): Promise<Record<string, string>> => {
+  const session = await supabase?.auth.getSession();
+  const token = session?.data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 export const api = {
   movies: () => json<Movie[]>("/api/movies/now-playing"),
@@ -29,10 +38,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  createPaymentIntent: (reservationId: string, email: string) =>
-    json<{ clientSecret: string }>(
+  createPaymentIntent: (reservationId: string, email: string, promoCode?: string) =>
+    json<PaymentIntentResponse>(
       `/api/reservations/${reservationId}/payment-intent`,
-      { method: "POST", body: JSON.stringify({ email }) },
+      { method: "POST", body: JSON.stringify({ email, promoCode }) },
     ),
   pay: (body: { reservationId: string; email: string; paymentIntentId: string }) =>
     json<Booking>("/api/bookings/confirm", {
@@ -54,20 +63,23 @@ export const api = {
       { method: "POST" },
     ),
   membershipPlans: () => json<MembershipPlan[]>("/api/memberships/plans"),
-  membershipPaymentIntent: (plan: string, email?: string) =>
-    json<{ clientSecret: string }>("/api/memberships/payment-intent", {
+  membershipPaymentIntent: async (plan: string, promoCode?: string) =>
+    json<PaymentIntentResponse>("/api/memberships/payment-intent", {
       method: "POST",
-      body: JSON.stringify({ plan, email }),
+      headers: await authHeaders(),
+      body: JSON.stringify({ plan, promoCode }),
     }),
-  membershipPay: (body: {
-    plan: string;
-    email?: string;
-    paymentIntentId: string;
-  }) =>
-    json("/api/memberships/checkout", {
+  membershipPay: async (body: { plan: string; paymentIntentId: string }) =>
+    json<Membership>("/api/memberships/checkout", {
       method: "POST",
+      headers: await authHeaders(),
       body: JSON.stringify(body),
     }),
+  myMembership: async () =>
+    json<Membership | null>("/api/memberships/mine", {
+      headers: await authHeaders(),
+    }),
+  activeOffers: () => json<Offer[]>("/api/offers/active"),
 };
 export const emailSchema = z.string().email();
 export const money = (pence: number) =>

@@ -348,26 +348,41 @@ async function getReservationTotal(reservationId) {
   return { totalPence };
 }
 
-async function createPaymentIntent(reservationId, email) {
+async function createPaymentIntent(reservationId, email, discount) {
   const { totalPence } = await getReservationTotal(reservationId);
   if (!stripeConfigured)
     throw Object.assign(new Error("Payments are not configured"), {
       status: 500,
     });
+  const amountPence = discount
+    ? Math.round((totalPence * (100 - discount.discountPercent)) / 100)
+    : totalPence;
   const intent = await stripe.paymentIntents.create({
-    amount: totalPence,
+    amount: amountPence,
     currency: "gbp",
     payment_method_types: ["card"],
-    metadata: { reservationId, email, kind: "booking" },
+    metadata: {
+      reservationId,
+      email,
+      kind: "booking",
+      promoCode: discount?.code || "",
+      discountPercent: String(discount?.discountPercent || 0),
+    },
   });
-  return { clientSecret: intent.client_secret };
+  return {
+    clientSecret: intent.client_secret,
+    amountPence,
+    discountPence: totalPence - amountPence,
+  };
 }
 
-async function confirm({ reservationId, email, payment }) {
+async function confirm({ reservationId, email, payment, discountPercent, promoCode }) {
   const { data: bookingId, error } = await supabase.rpc("confirm_booking", {
     p_draft_id: reservationId,
     p_email: email,
     p_payment: payment,
+    p_discount_percent: discountPercent || 0,
+    p_promo_code: promoCode || null,
   });
   if (error) {
     if (/RESERVATION_EXPIRED/.test(error.message))

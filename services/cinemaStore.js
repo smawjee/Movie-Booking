@@ -42,8 +42,7 @@ const experiences = {
 };
 const screenings = new Map(),
   reservations = new Map(),
-  bookings = new Map(),
-  memberships = [];
+  bookings = new Map();
 const formats = Object.keys(experiences);
 const uuid = () => crypto.randomUUID();
 const hash = (s) =>
@@ -191,24 +190,41 @@ function getReservationTotal(reservationId) {
   return { reservation, screening, seats, totalPence };
 }
 
-async function createPaymentIntent(reservationId, email) {
+async function createPaymentIntent(reservationId, email, discount) {
   const { totalPence } = getReservationTotal(reservationId);
   if (!stripeConfigured)
     throw Object.assign(new Error("Payments are not configured"), {
       status: 500,
     });
+  const amountPence = discount
+    ? Math.round((totalPence * (100 - discount.discountPercent)) / 100)
+    : totalPence;
   const intent = await stripe.paymentIntents.create({
-    amount: totalPence,
+    amount: amountPence,
     currency: "gbp",
     payment_method_types: ["card"],
-    metadata: { reservationId, email, kind: "booking" },
+    metadata: {
+      reservationId,
+      email,
+      kind: "booking",
+      promoCode: discount?.code || "",
+      discountPercent: String(discount?.discountPercent || 0),
+    },
   });
-  return { clientSecret: intent.client_secret };
+  return {
+    clientSecret: intent.client_secret,
+    amountPence,
+    discountPence: totalPence - amountPence,
+  };
 }
 
-function confirm({ reservationId, email, payment }) {
-  const { reservation, screening, seats, totalPence } =
+function confirm({ reservationId, email, payment, discountPercent, promoCode }) {
+  const { reservation, screening, seats, totalPence: fullTotalPence } =
     getReservationTotal(reservationId);
+  const totalPence = Math.round(
+    (fullTotalPence * (100 - (discountPercent || 0))) / 100,
+  );
+  const discountPence = fullTotalPence - totalPence;
   const reference = `CG-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
   const safePayment = {
     reference: payment.reference,
@@ -218,6 +234,8 @@ function confirm({ reservationId, email, payment }) {
     status: payment.status,
     createdAt: payment.createdAt || new Date().toISOString(),
     stripePaymentIntentId: payment.stripePaymentIntentId,
+    promoCode: promoCode || undefined,
+    discountPence: discountPence || 0,
   };
   const booking = {
     reference,
@@ -233,9 +251,11 @@ function confirm({ reservationId, email, payment }) {
   reservation.status = "confirmed";
   return booking;
 }
+// Plan ids match the lowercase primary keys already seeded into
+// public.membership_plans by the initial schema migration.
 const membershipPlans = [
   {
-    id: "Silver",
+    id: "silver",
     name: "Silver",
     pricePence: 499,
     discountPercent: 5,
@@ -246,7 +266,7 @@ const membershipPlans = [
     ],
   },
   {
-    id: "Gold",
+    id: "gold",
     name: "Gold",
     pricePence: 899,
     discountPercent: 10,
@@ -259,7 +279,7 @@ const membershipPlans = [
     ],
   },
   {
-    id: "Platinum",
+    id: "platinum",
     name: "Platinum",
     pricePence: 1499,
     discountPercent: 15,
@@ -273,46 +293,6 @@ const membershipPlans = [
     ],
   },
 ];
-
-async function createMembershipPaymentIntent(plan, email) {
-  const found = membershipPlans.find((p) => p.id === plan);
-  if (!found)
-    throw Object.assign(new Error("Unknown membership plan"), { status: 400 });
-  if (!stripeConfigured)
-    throw Object.assign(new Error("Payments are not configured"), {
-      status: 500,
-    });
-  const intent = await stripe.paymentIntents.create({
-    amount: found.pricePence,
-    currency: "gbp",
-    payment_method_types: ["card"],
-    metadata: { plan, email: email || "", kind: "membership" },
-  });
-  return { clientSecret: intent.client_secret };
-}
-
-function checkoutMembership({ plan, payment, email }) {
-  const found = membershipPlans.find((p) => p.id === plan);
-  if (!found)
-    throw Object.assign(new Error("Unknown membership plan"), { status: 400 });
-  const item = {
-    id: uuid(),
-    plan,
-    email: email || null,
-    status: "active",
-    pricePence: found.pricePence,
-    renewsAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-    payment: {
-      reference: payment.reference,
-      brand: payment.brand,
-      last4: payment.last4,
-      status: payment.status,
-      stripePaymentIntentId: payment.stripePaymentIntentId,
-    },
-  };
-  memberships.push(item);
-  return item;
-}
 function publicBooking(booking) {
   const { email, payment, ...rest } = booking;
   return rest;
@@ -337,6 +317,4 @@ module.exports = {
   updateDeliveryStatus,
   publicBooking,
   membershipPlans,
-  createMembershipPaymentIntent,
-  checkoutMembership,
 };

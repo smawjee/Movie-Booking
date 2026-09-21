@@ -1015,6 +1015,37 @@ main {
   border-radius: 0.5rem;
   font-size: 0.78rem;
 }
+.notice a {
+  text-decoration: underline;
+  font-weight: 800;
+}
+.offers-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem max(1rem, calc((100% - 1280px) / 2));
+  background: var(--accent-2-soft);
+  color: var(--accent-2);
+  border-bottom: 1px solid rgba(180, 140, 255, 0.2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.offers-banner p {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.offers-banner button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
 .form-grid {
   display: grid;
   gap: 0.8rem;

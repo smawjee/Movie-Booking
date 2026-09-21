@@ -27,6 +27,7 @@ export function Booking() {
     [selected, setSelected] = useState<Seat[]>([]),
     [hold, setHold] = useState<string | null>(null),
     [email, setEmail] = useState(""),
+    [promoCode, setPromoCode] = useState(""),
     [checkout, setCheckout] = useState(false);
   const reservation = useMutation({
     mutationFn: () =>
@@ -44,6 +45,7 @@ export function Booking() {
   const paymentIntent = useReservationPaymentIntent(
     checkout ? hold : null,
     email,
+    promoCode || undefined,
   );
   const confirm = async (paymentIntentId: string) => {
     if (!hold) return;
@@ -134,6 +136,14 @@ export function Booking() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </label>
+          <label>
+            Promo code (optional)
+            <input
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder="e.g. WELCOME10"
+            />
+          </label>
           <button
             className="button"
             disabled={!selected.length || !email}
@@ -150,11 +160,20 @@ export function Booking() {
         <div className="modal">
           <PaymentForm
             clientSecret={paymentIntent.data?.clientSecret ?? null}
-            amountPence={total}
+            amountPence={paymentIntent.data?.amountPence ?? total}
             label="Confirm booking"
             onSuccess={confirm}
             onCancel={() => setCheckout(false)}
-          />
+          >
+            {paymentIntent.isError && (
+              <p className="error">{(paymentIntent.error as Error).message}</p>
+            )}
+            {!!paymentIntent.data?.discountPence && (
+              <p className="notice">
+                Promo applied: −{money(paymentIntent.data.discountPence)}
+              </p>
+            )}
+          </PaymentForm>
         </div>
       )}
     </section>

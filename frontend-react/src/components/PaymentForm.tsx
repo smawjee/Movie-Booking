@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -83,12 +83,14 @@ export function PaymentForm({
   label,
   onSuccess,
   onCancel,
+  children,
 }: {
   clientSecret: string | null;
   amountPence: number;
   label: string;
   onSuccess: (paymentIntentId: string) => void;
   onCancel?: () => void;
+  children?: ReactNode;
 }) {
   return (
     <div className="payment card">
@@ -116,6 +118,7 @@ export function PaymentForm({
         <strong>4242 4242 4242 4242</strong>, any future expiry date and any
         CVC.
       </p>
+      {children}
       {!stripePromise ? (
         <p className="error" role="alert">
           Payments are not configured.

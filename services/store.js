@@ -3,6 +3,8 @@ const memoryStore = require("./cinemaStore");
 const activeStore = supabaseConfigured
   ? require("./supabaseBookingStore")
   : memoryStore;
+const membershipStore = require("./membershipStore");
+const { getActivePromotion, getActiveOffers } = require("./promotions");
 
 module.exports = {
   experiences: memoryStore.experiences,
@@ -15,13 +17,15 @@ module.exports = {
   getBooking: (...args) => activeStore.getBooking(...args),
   updateDeliveryStatus: (...args) => activeStore.updateDeliveryStatus(...args),
   publicBooking: (...args) => activeStore.publicBooking(...args),
-  // Memberships require a signed-in user (memberships.user_id is NOT NULL in
-  // the schema); real auth isn't wired up yet, so this always stays in-memory
-  // regardless of which store is active for bookings. The Stripe charge
-  // itself is still real (test mode) — only the record of it is unpersisted,
-  // exactly as before. It's lost on server restart, same as pre-Stripe.
+  getActivePromotion,
+  getActiveOffers,
+  // Memberships are tied to a signed-in Supabase user (memberships.user_id
+  // is NOT NULL and there's no guest path any more) — real persistence,
+  // always via Supabase regardless of which store backs bookings. Routes
+  // gate these behind supabaseConfigured before calling in.
   membershipPlans: memoryStore.membershipPlans,
   createMembershipPaymentIntent: (...args) =>
-    memoryStore.createMembershipPaymentIntent(...args),
-  checkoutMembership: (...args) => memoryStore.checkoutMembership(...args),
+    membershipStore.createPaymentIntent(...args),
+  checkoutMembership: (...args) => membershipStore.checkoutMembership(...args),
+  getMembership: (...args) => membershipStore.getMembership(...args),
 };

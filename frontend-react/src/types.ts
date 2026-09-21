@@ -59,13 +59,30 @@ export interface Reservation {
   status: "held";
 }
 export interface MembershipPlan {
-  id: "Silver" | "Gold" | "Platinum";
+  id: "silver" | "gold" | "platinum";
   name: string;
   pricePence: number;
   discountPercent: number;
   tag?: string;
   style?: "featured" | "premium";
   perks: string[];
+}
+export interface Membership {
+  id: string;
+  plan: "silver" | "gold" | "platinum";
+  status: "active" | "cancelled";
+  renewsAt: string | null;
+  createdAt: string;
+}
+export interface Offer {
+  code: string;
+  description: string;
+  discountPercent: number;
+}
+export interface PaymentIntentResponse {
+  clientSecret: string;
+  amountPence: number;
+  discountPence: number;
 }
 export interface AgeConfirmation {
   rating: string;
