@@ -74,6 +74,13 @@ export interface Membership {
   renewsAt: string | null;
   createdAt: string;
 }
+export interface Trailer {
+  id: number;
+  title: string;
+  trailerKey: string;
+  trailerUrl: string;
+  rating: string;
+}
 export interface Offer {
   code: string;
   description: string;

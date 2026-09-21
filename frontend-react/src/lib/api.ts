@@ -8,6 +8,7 @@ import type {
   PaymentIntentResponse,
   Reservation,
   Screening,
+  Trailer,
 } from "../types";
 import { supabase } from "./supabase";
 const json = async <T>(url: string, init?: RequestInit): Promise<T> => {
@@ -28,6 +29,7 @@ const authHeaders = async (): Promise<Record<string, string>> => {
 export const api = {
   movies: () => json<Movie[]>("/api/movies/now-playing"),
   upcoming: () => json<Movie[]>("/api/movies/upcoming"),
+  trailers: () => json<Trailer[]>("/api/movies/trailers"),
   screenings: (params: URLSearchParams) =>
     json<Screening[]>(`/api/screenings?${params}`),
   advanceScreenings: (params: URLSearchParams) =>

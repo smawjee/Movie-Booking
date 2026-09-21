@@ -1,13 +1,22 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Play } from "lucide-react";
 import { api, money, poster } from "../lib/api";
 import { experiences } from "../lib/experiences";
+import { useTrailers } from "../lib/hooks";
+import { TrailerModal } from "../components/TrailerModal";
 import { moviesRoute } from "../routes";
+import type { Trailer } from "../types";
 
 export function Movies() {
   const search = moviesRoute.useSearch();
   const films = useQuery({ queryKey: ["movies"], queryFn: api.movies });
+  const trailers = useTrailers();
+  const [playing, setPlaying] = useState<Trailer | null>(null);
+  const trailerById = new Map(
+    (trailers.data || []).map((t) => [t.id, t] as const),
+  );
   const [cinema, setCinema] = useState("edinburgh"),
     [date, setDate] = useState(new Date().toISOString().slice(0, 10)),
     [format, setFormat] = useState(""),
@@ -128,6 +137,15 @@ export function Movies() {
               <div>
                 <span className="badge">{movie.rating}</span>
                 <h2>{movie.title}</h2>
+                {trailerById.has(movie.id) && (
+                  <button
+                    type="button"
+                    className="text-button trailer-link"
+                    onClick={() => setPlaying(trailerById.get(movie.id)!)}
+                  >
+                    <Play size={14} aria-hidden="true" /> Watch trailer
+                  </button>
+                )}
                 <p>{movie.overview}</p>
                 <div className="times">
                   {screens.data
@@ -150,6 +168,13 @@ export function Movies() {
             </article>
           ))}
         </div>
+      )}
+      {playing && (
+        <TrailerModal
+          trailerUrl={playing.trailerUrl}
+          title={playing.title}
+          onClose={() => setPlaying(null)}
+        />
       )}
     </section>
   );

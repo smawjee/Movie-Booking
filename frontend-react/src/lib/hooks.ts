@@ -38,6 +38,15 @@ export function useMyMembership(enabled: boolean) {
   });
 }
 
+export function useTrailers() {
+  return useQuery({
+    queryKey: ["trailers"],
+    queryFn: api.trailers,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
 export function useActiveOffers() {
   return useQuery({
     queryKey: ["offers", "active"],

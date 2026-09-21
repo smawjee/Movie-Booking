@@ -1,15 +1,37 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Play } from "lucide-react";
 import { api, poster } from "../lib/api";
+import { useTrailers } from "../lib/hooks";
 import { PageHero } from "../components/PageHero";
-import type { Movie } from "../types";
+import { TrailerModal } from "../components/TrailerModal";
+import type { Movie, Trailer } from "../types";
 
-function MovieCard({ movie }: { movie: Movie }) {
+function MovieCard({
+  movie,
+  trailer,
+  onPlayTrailer,
+}: {
+  movie: Movie;
+  trailer?: Trailer;
+  onPlayTrailer: (trailer: Trailer) => void;
+}) {
   return (
     <article className="movie">
       <div className="movie-poster">
         <img src={poster(movie.poster_path)} alt={`${movie.title} poster`} />
         <span className="badge movie-rating">{movie.rating || "NR"}</span>
+        {trailer && (
+          <button
+            type="button"
+            className="trailer-play"
+            onClick={() => onPlayTrailer(trailer)}
+            aria-label={`Watch ${movie.title} trailer`}
+          >
+            <Play size={22} aria-hidden="true" />
+          </button>
+        )}
       </div>
       <h3>{movie.title}</h3>
       <Link className="button" to="/movies" search={{ movie: movie.title }}>
@@ -25,6 +47,11 @@ export function Home() {
     queryKey: ["movies-upcoming"],
     queryFn: api.upcoming,
   });
+  const trailers = useTrailers();
+  const [playing, setPlaying] = useState<Trailer | null>(null);
+  const trailerById = new Map(
+    (trailers.data || []).map((t) => [t.id, t] as const),
+  );
   return (
     <>
       <PageHero
@@ -56,7 +83,12 @@ export function Home() {
         ) : (
           <div className="movie-grid">
             {films.data?.slice(0, 8).map((m) => (
-              <MovieCard key={m.id} movie={m} />
+              <MovieCard
+                key={m.id}
+                movie={m}
+                trailer={trailerById.get(m.id)}
+                onPlayTrailer={setPlaying}
+              />
             ))}
           </div>
         )}
@@ -92,6 +124,13 @@ export function Home() {
           </div>
         )}
       </section>
+      {playing && (
+        <TrailerModal
+          trailerUrl={playing.trailerUrl}
+          title={playing.title}
+          onClose={() => setPlaying(null)}
+        />
+      )}
     </>
   );
 }
