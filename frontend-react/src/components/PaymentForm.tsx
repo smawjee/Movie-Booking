@@ -9,9 +9,15 @@ import {
 import { ShieldCheck, X } from "lucide-react";
 import { money } from "../lib/api";
 
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
-  | string
-  | undefined;
+// Fallback default for this project's Stripe test-mode publishable key —
+// not a secret (it can only create/confirm PaymentIntents, never charge
+// without the secret key), so this keeps the deployed site working even if
+// VITE_STRIPE_PUBLISHABLE_KEY isn't set as a Vercel env var yet.
+const FALLBACK_PUBLISHABLE_KEY =
+  "pk_test_51UHtYiHCekLv4ToNZZWdZ31ZblQqrB2neAaxGx0CxkBD5aTv24fntFDH4sHtGVkturFGSfqMcURJWgodbihZT2lH00hZc3IWST";
+const publishableKey =
+  (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) ||
+  FALLBACK_PUBLISHABLE_KEY;
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 const appearance = {
