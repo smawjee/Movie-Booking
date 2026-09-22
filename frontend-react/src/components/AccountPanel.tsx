@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { supabase, supabaseConfigured } from "../lib/supabase";
+import { useMyMembership } from "../lib/hooks";
 export function AccountPanel() {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
@@ -17,6 +19,7 @@ export function AccountPanel() {
     );
     return () => listener?.data.subscription.unsubscribe();
   }, []);
+  const membership = useMyMembership(Boolean(sessionEmail));
   if (!supabaseConfigured)
     return (
       <div className="supabase-setup card">
@@ -64,6 +67,24 @@ export function AccountPanel() {
           Your bookings and membership can be protected by Supabase Row Level
           Security.
         </p>
+        {membership.data ? (
+          <p className="membership-status">
+            <span className="plan-tag">
+              {membership.data.plan.replace(/-/g, " ")}
+            </span>
+            member since{" "}
+            {new Date(membership.data.createdAt).toLocaleDateString()}
+            {" · "}
+            <Link to="/membership">Manage membership</Link>
+          </p>
+        ) : (
+          !membership.isLoading && (
+            <p className="membership-status">
+              No active membership ·{" "}
+              <Link to="/membership">See Cinego+ plans</Link>
+            </p>
+          )
+        )}
         <button
           className="button secondary"
           onClick={() => supabase?.auth.signOut()}

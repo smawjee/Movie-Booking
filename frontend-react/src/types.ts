@@ -90,6 +90,7 @@ export interface PaymentIntentResponse {
   clientSecret: string;
   amountPence: number;
   discountPence: number;
+  customerSessionClientSecret?: string | null;
 }
 export interface AgeConfirmation {
   rating: string;

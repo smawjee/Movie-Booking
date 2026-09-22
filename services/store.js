@@ -28,4 +28,5 @@ module.exports = {
     membershipStore.createPaymentIntent(...args),
   checkoutMembership: (...args) => membershipStore.checkoutMembership(...args),
   getMembership: (...args) => membershipStore.getMembership(...args),
+  cancelMembership: (...args) => membershipStore.cancelMembership(...args),
 };

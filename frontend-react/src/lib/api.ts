@@ -81,6 +81,11 @@ export const api = {
     json<Membership | null>("/api/memberships/mine", {
       headers: await authHeaders(),
     }),
+  cancelMembership: async () =>
+    json<{ cancelled: boolean }>("/api/memberships/cancel", {
+      method: "POST",
+      headers: await authHeaders(),
+    }),
   activeOffers: () => json<Offer[]>("/api/offers/active"),
 };
 export const emailSchema = z.string().email();

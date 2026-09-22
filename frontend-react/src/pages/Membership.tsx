@@ -47,6 +47,13 @@ export function Membership() {
     queryClient.invalidateQueries({ queryKey: ["membership", "mine"] });
   };
 
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const cancelMembership = async () => {
+    await api.cancelMembership();
+    setConfirmingCancel(false);
+    queryClient.invalidateQueries({ queryKey: ["membership", "mine"] });
+  };
+
   return (
     <section className="section">
       <span className="eyebrow">Cinego members</span>
@@ -59,9 +66,39 @@ export function Membership() {
         </div>
       )}
       {signedIn === true && mine.data && (
-        <div className="notice">
-          You're on the <strong>{mine.data.plan}</strong> plan, active since{" "}
-          {new Date(mine.data.createdAt).toLocaleDateString()}.
+        <div className="notice membership-notice">
+          <p>
+            You're on the <strong>{mine.data.plan}</strong> plan, active
+            since {new Date(mine.data.createdAt).toLocaleDateString()}.
+          </p>
+          {confirmingCancel ? (
+            <p className="membership-confirm">
+              This ends your {mine.data.plan} membership immediately. Are you
+              sure?{" "}
+              <button
+                type="button"
+                className="text-button danger"
+                onClick={cancelMembership}
+              >
+                Yes, cancel
+              </button>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setConfirmingCancel(false)}
+              >
+                Never mind
+              </button>
+            </p>
+          ) : (
+            <button
+              type="button"
+              className="text-button danger"
+              onClick={() => setConfirmingCancel(true)}
+            >
+              Cancel membership
+            </button>
+          )}
         </div>
       )}
 
@@ -69,38 +106,48 @@ export function Membership() {
         <div className="empty">Loading plans…</div>
       ) : (
         <div className="plan-grid">
-          {plans.data?.map((plan) => (
-            <article
-              className={`plan card${plan.style ? ` ${plan.style}` : ""}`}
-              key={plan.id}
-            >
-              {plan.tag && <span className="plan-tag">{plan.tag}</span>}
-              <h2>{plan.name}</h2>
-              <strong>
-                {money(plan.pricePence)} <small>/ month</small>
-              </strong>
-              <ul>
-                {plan.perks.map((perk) => (
-                  <li key={perk}>{perk}</li>
-                ))}
-              </ul>
-              <button
-                className="button"
-                disabled={!signedIn}
-                onClick={() => setChosen(plan)}
+          {plans.data?.map((plan) => {
+            const isCurrent = mine.data?.plan === plan.id;
+            return (
+              <article
+                className={`plan card${plan.style ? ` ${plan.style}` : ""}`}
+                key={plan.id}
               >
-                {signedIn ? `Choose ${plan.name}` : "Sign in to join"}
-              </button>
-            </article>
-          ))}
+                {plan.tag && <span className="plan-tag">{plan.tag}</span>}
+                <h2>{plan.name}</h2>
+                <strong>
+                  {money(plan.pricePence)} <small>/ month</small>
+                </strong>
+                <ul>
+                  {plan.perks.map((perk) => (
+                    <li key={perk}>{perk}</li>
+                  ))}
+                </ul>
+                <button
+                  className="button"
+                  disabled={!signedIn || isCurrent}
+                  onClick={() => setChosen(plan)}
+                >
+                  {!signedIn
+                    ? "Sign in to join"
+                    : isCurrent
+                      ? "Current plan"
+                      : mine.data
+                        ? `Switch to ${plan.name}`
+                        : `Choose ${plan.name}`}
+                </button>
+              </article>
+            );
+          })}
         </div>
       )}
       {chosen && (
         <div className={`modal${chosenClosing ? " is-closing" : ""}`}>
           <PaymentForm
             clientSecret={paymentIntent.data?.clientSecret ?? null}
+            customerSessionClientSecret={paymentIntent.data?.customerSessionClientSecret}
             amountPence={paymentIntent.data?.amountPence ?? chosen.pricePence}
-            label={`Join ${chosen.name}`}
+            label={mine.data ? `Switch to ${chosen.name}` : `Join ${chosen.name}`}
             onSuccess={pay}
             onCancel={closeChosen}
           >

@@ -85,6 +85,7 @@ function StripeCheckoutForm({
 
 export function PaymentForm({
   clientSecret,
+  customerSessionClientSecret,
   amountPence,
   label,
   onSuccess,
@@ -92,6 +93,7 @@ export function PaymentForm({
   children,
 }: {
   clientSecret: string | null;
+  customerSessionClientSecret?: string | null;
   amountPence: number;
   label: string;
   onSuccess: (paymentIntentId: string) => void;
@@ -134,7 +136,11 @@ export function PaymentForm({
       ) : (
         <Elements
           stripe={stripePromise}
-          options={{ clientSecret, appearance }}
+          options={{
+            clientSecret,
+            appearance,
+            ...(customerSessionClientSecret ? { customerSessionClientSecret } : {}),
+          }}
         >
           <StripeCheckoutForm
             amountPence={amountPence}

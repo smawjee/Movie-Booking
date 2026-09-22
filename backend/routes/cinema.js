@@ -207,6 +207,7 @@ router.post("/memberships/payment-intent", async (req, res) => {
       .json(
         await store.createMembershipPaymentIntent(
           user.id,
+          user.email,
           parsed.data.plan,
           discount,
         ),
@@ -278,6 +279,19 @@ router.get("/memberships/mine", async (req, res) => {
   if (!user) return res.status(401).json({ error: "Sign in required" });
   try {
     res.json(await store.getMembership(user.id));
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
+  }
+});
+router.post("/memberships/cancel", async (req, res) => {
+  if (!supabaseConfigured)
+    return res
+      .status(503)
+      .json({ error: "Memberships require Supabase to be configured" });
+  const user = await getAuthedUser(req);
+  if (!user) return res.status(401).json({ error: "Sign in required" });
+  try {
+    res.json(await store.cancelMembership(user.id));
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
   }
