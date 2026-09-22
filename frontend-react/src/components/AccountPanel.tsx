@@ -5,7 +5,9 @@ export function AccountPanel() {
     [password, setPassword] = useState(""),
     [sessionEmail, setSessionEmail] = useState<string | null>(null),
     [mode, setMode] = useState<"signin" | "signup">("signin"),
-    [message, setMessage] = useState("");
+    [status, setStatus] = useState<{ text: string; error: boolean } | null>(
+      null,
+    );
   useEffect(() => {
     supabase?.auth
       .getSession()
@@ -72,26 +74,35 @@ export function AccountPanel() {
     );
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage("");
+    setStatus(null);
     const result =
       mode === "signin"
         ? await supabase!.auth.signInWithPassword({ email, password })
         : await supabase!.auth.signUp({ email, password });
-    setMessage(result.error?.message || "Check your email to continue.");
+    setStatus(
+      result.error
+        ? { text: result.error.message, error: true }
+        : { text: "Check your email to continue.", error: false },
+    );
   };
   const googleSignIn = async () => {
     const { error } = await supabase!.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setMessage(error.message);
+    if (error) setStatus({ text: error.message, error: true });
   };
   const resetPassword = async () => {
-    if (!email) return setMessage("Enter your email address first.");
+    if (!email)
+      return setStatus({ text: "Enter your email address first.", error: true });
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/account`,
     });
-    setMessage(error?.message || "Password reset email sent.");
+    setStatus(
+      error
+        ? { text: error.message, error: true }
+        : { text: "Password reset email sent.", error: false },
+    );
   };
   return (
     <form className="card account-panel" onSubmit={submit}>
@@ -116,7 +127,14 @@ export function AccountPanel() {
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
-      {message && <p>{message}</p>}
+      {status && (
+        <p
+          className={status.error ? "error" : "auth-message"}
+          role={status.error ? "alert" : undefined}
+        >
+          {status.text}
+        </p>
+      )}
       <button className="button">
         {mode === "signin" ? "Sign in" : "Create account"}
       </button>

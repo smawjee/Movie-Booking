@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useDelayedClose } from "../lib/useDelayedClose";
 
 export function TrailerModal({
   trailerUrl,
@@ -9,13 +10,14 @@ export function TrailerModal({
   title: string;
   onClose: () => void;
 }) {
+  const { closing, close } = useDelayedClose(onClose);
   return (
-    <div className="modal" onClick={onClose}>
+    <div className={`modal${closing ? " is-closing" : ""}`} onClick={close}>
       <div className="trailer-frame" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           className="payment-close"
-          onClick={onClose}
+          onClick={close}
           aria-label="Close trailer"
         >
           <X size={20} aria-hidden="true" />

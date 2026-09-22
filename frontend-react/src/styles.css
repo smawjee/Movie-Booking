@@ -49,6 +49,14 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+  --duration-modal: 260ms;
 }
 * {
   box-sizing: border-box;
@@ -151,6 +159,13 @@ footer img {
   border: 1px solid var(--line);
   border-radius: 50%;
   text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-out), transform 80ms var(--ease-out);
+}
+.nav-account:hover {
+  border-color: var(--accent);
+}
+.nav-account:active {
+  transform: scale(0.92);
 }
 .header nav a {
   position: relative;
@@ -340,11 +355,11 @@ main {
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(245, 201, 72, 0.18);
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    filter 0.15s ease,
-    background 0.15s ease,
-    border-color 0.15s ease;
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    filter var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 .button:hover:not(:disabled) {
   filter: brightness(1.08);
@@ -352,7 +367,8 @@ main {
   box-shadow: 0 12px 26px rgba(245, 201, 72, 0.28);
 }
 .button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
 }
 .button.secondary {
   background: var(--surface2);
@@ -421,13 +437,17 @@ main {
   backdrop-filter: blur(2px);
   color: #fff;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
 }
 .trailer-play:hover {
   background: var(--accent);
   color: var(--accent-ink);
   border-color: var(--accent);
   transform: scale(1.08);
+}
+.trailer-play:active {
+  transform: scale(0.98);
+  transition-duration: 80ms;
 }
 .movie h3 {
   white-space: nowrap;
@@ -484,6 +504,17 @@ main {
   background: transparent;
   color: #ddd;
   cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    transform 80ms var(--ease-out);
+}
+.clear-filters:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--surface2);
+}
+.clear-filters:active {
+  transform: scale(0.97);
 }
 .active-filters {
   display: flex;
@@ -564,6 +595,17 @@ main {
   border: 1px solid var(--line);
   border-radius: 0.65rem;
   text-decoration: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    transform 80ms var(--ease-out);
+}
+.time:hover {
+  border-color: var(--accent);
+  background: #2a2d34;
+}
+.time:active {
+  transform: scale(0.97);
 }
 .time strong {
   color: var(--accent);
@@ -803,6 +845,16 @@ main {
   background: #2a2d34;
   color: white;
   cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    transform 80ms var(--ease-out);
+}
+.quantity button:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.quantity button:active {
+  transform: scale(0.9);
 }
 .basket-bar {
   position: sticky;
@@ -926,6 +978,23 @@ main {
 }
 .error {
   color: var(--danger) !important;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.auth-message {
+  color: var(--muted);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 .booking-grid {
   display: grid;
@@ -959,6 +1028,18 @@ main {
   border-radius: 0.4rem;
   background: transparent;
   color: #ddd;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform 80ms var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+.seats button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.seats button:active:not(:disabled) {
+  transform: scale(0.93);
 }
 .seats .premium {
   border-color: var(--accent-2);
@@ -986,12 +1067,29 @@ main {
   place-items: center;
   padding: 1rem;
   background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
   overflow: auto;
+  opacity: 1;
+  transition: opacity var(--duration-modal) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+  }
+}
+.modal.is-closing {
+  opacity: 0;
 }
 .payment {
   padding: 1.4rem;
   width: min(520px, 100%);
   position: relative;
+  transform-origin: center;
+  transition:
+    transform var(--duration-modal) var(--ease-out),
+    opacity var(--duration-modal) var(--ease-out);
+  @starting-style {
+    transform: scale(0.95);
+    opacity: 0;
+  }
 }
 .trailer-frame {
   position: relative;
@@ -1001,6 +1099,19 @@ main {
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.75);
+  transform-origin: center;
+  transition:
+    transform var(--duration-modal) var(--ease-out),
+    opacity var(--duration-modal) var(--ease-out);
+  @starting-style {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+.modal.is-closing .payment,
+.modal.is-closing .trailer-frame {
+  transform: scale(0.95);
+  opacity: 0;
 }
 .trailer-frame iframe {
   width: 100%;
@@ -1023,6 +1134,17 @@ main {
   color: white;
   font-size: 1.2rem;
   cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform 80ms var(--ease-out);
+}
+.payment-close:hover {
+  background: var(--surface-3);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.payment-close:active {
+  transform: scale(0.9);
 }
 .payment-heading {
   padding-right: 3rem;
@@ -1054,6 +1176,13 @@ main {
   color: #e9d295;
   border-radius: 0.5rem;
   font-size: 0.78rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 .notice a {
   text-decoration: underline;
@@ -1069,6 +1198,24 @@ main {
   border-bottom: 1px solid rgba(180, 140, 255, 0.2);
   font-size: var(--text-sm);
   font-weight: 700;
+  max-height: 3.25rem;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    max-height var(--duration-modal) var(--ease-in-out),
+    opacity var(--duration-base) var(--ease-out),
+    padding-block var(--duration-modal) var(--ease-in-out),
+    border-color var(--duration-modal) var(--ease-in-out);
+  @starting-style {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+.offers-banner.is-closing {
+  max-height: 0;
+  opacity: 0;
+  padding-block: 0;
+  border-bottom-color: transparent;
 }
 .offers-banner p {
   flex: 1;
@@ -1085,6 +1232,14 @@ main {
   background: transparent;
   color: inherit;
   cursor: pointer;
+  border-radius: 50%;
+  transition: background var(--duration-fast) var(--ease-out), transform 80ms var(--ease-out);
+}
+.offers-banner button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.offers-banner button:active {
+  transform: scale(0.9);
 }
 .form-grid {
   display: grid;
@@ -1153,6 +1308,14 @@ main {
   color: var(--accent-ink);
   font-weight: 800;
   cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+.chat-launch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(245, 201, 72, 0.3);
+}
+.chat-launch:active {
+  transform: scale(0.97);
 }
 .chat-drawer {
   position: fixed;
@@ -1168,6 +1331,14 @@ main {
   border-radius: 1.2rem;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.75);
   overflow: hidden;
+  transform-origin: bottom right;
+  transition:
+    transform var(--duration-modal) var(--ease-drawer),
+    opacity var(--duration-base) var(--ease-out);
+  @starting-style {
+    transform: scale(0.9) translateY(12px);
+    opacity: 0;
+  }
 }
 .chat-layer {
   position: fixed;
@@ -1183,6 +1354,18 @@ main {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
   pointer-events: auto;
+  opacity: 1;
+  transition: opacity var(--duration-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+  }
+}
+.chat-layer.is-closing .chat-backdrop {
+  opacity: 0;
+}
+.chat-layer.is-closing .chat-drawer {
+  transform: scale(0.9) translateY(12px);
+  opacity: 0;
 }
 .chat-drawer {
   pointer-events: auto;
@@ -1236,6 +1419,14 @@ main {
   color: #fff;
   border: 0;
   cursor: pointer;
+  border-radius: 50%;
+  transition: background var(--duration-fast) var(--ease-out), transform 80ms var(--ease-out);
+}
+.chat-drawer header button:hover {
+  background: var(--surface2);
+}
+.chat-drawer header button:active {
+  transform: scale(0.9);
 }
 .chat-messages {
   padding: 1rem;
@@ -1249,6 +1440,13 @@ main {
   border-radius: 0.8rem;
   background: #252831;
   max-width: 88%;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
 }
 .bubble.user {
   align-self: end;
@@ -1328,6 +1526,17 @@ main {
   color: #ddd;
   border-radius: 999px;
   padding: 0.45rem;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    transform 80ms var(--ease-out);
+}
+.quick-replies button:hover {
+  border-color: var(--accent);
+  background: #262a32;
+}
+.quick-replies button:active {
+  transform: scale(0.96);
 }
 .chat-drawer form {
   display: flex;
@@ -1346,6 +1555,16 @@ main {
   border: 0;
   background: var(--accent);
   font-weight: 700;
+  padding: 0 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  cursor: pointer;
+  transition: filter var(--duration-fast) var(--ease-out), transform 80ms var(--ease-out);
+}
+.chat-drawer form button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.chat-drawer form button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 .chat-safety {
   padding: 0 0.8rem 0.7rem;
@@ -1632,5 +1851,26 @@ footer {
     scroll-behavior: auto !important;
     transition: none !important;
     animation: none !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .header {
+    background: #090a0d;
+    backdrop-filter: none;
+  }
+  .modal {
+    background: #050609;
+    backdrop-filter: none;
+  }
+  .chat-backdrop {
+    background: rgba(5, 6, 9, 0.7);
+    backdrop-filter: none;
+  }
+  .trailer-play {
+    backdrop-filter: none;
+  }
+  .movie-rating {
+    background: #05060a;
+    backdrop-filter: none;
   }
 }

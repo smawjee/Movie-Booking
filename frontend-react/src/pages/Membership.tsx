@@ -6,6 +6,7 @@ import { useMembershipPaymentIntent, useMyMembership } from "../lib/hooks";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 import type { MembershipPlan } from "../types";
 import { PaymentForm } from "../components/PaymentForm";
+import { useDelayedClose } from "../lib/useDelayedClose";
 
 export function Membership() {
   const queryClient = useQueryClient();
@@ -30,6 +31,9 @@ export function Membership() {
   });
   const mine = useMyMembership(signedIn === true);
   const [chosen, setChosen] = useState<MembershipPlan | null>(null);
+  const { closing: chosenClosing, close: closeChosen } = useDelayedClose(() =>
+    setChosen(null),
+  );
   const [promoCode, setPromoCode] = useState("");
   const paymentIntent = useMembershipPaymentIntent(
     chosen?.id ?? null,
@@ -92,13 +96,13 @@ export function Membership() {
         </div>
       )}
       {chosen && (
-        <div className="modal">
+        <div className={`modal${chosenClosing ? " is-closing" : ""}`}>
           <PaymentForm
             clientSecret={paymentIntent.data?.clientSecret ?? null}
             amountPence={paymentIntent.data?.amountPence ?? chosen.pricePence}
             label={`Join ${chosen.name}`}
             onSuccess={pay}
-            onCancel={() => setChosen(null)}
+            onCancel={closeChosen}
           >
             <label>
               Promo code (optional)

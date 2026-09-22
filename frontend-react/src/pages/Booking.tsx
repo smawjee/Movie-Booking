@@ -7,6 +7,7 @@ import type { AgeConfirmation, Screening, Seat } from "../types";
 import { AgeGate } from "../components/AgeGate";
 import { PaymentForm } from "../components/PaymentForm";
 import { bookingRoute } from "../routes";
+import { useDelayedClose } from "../lib/useDelayedClose";
 
 export function Booking() {
   const { screening } = bookingRoute.useSearch();
@@ -29,6 +30,9 @@ export function Booking() {
     [email, setEmail] = useState(""),
     [promoCode, setPromoCode] = useState(""),
     [checkout, setCheckout] = useState(false);
+  const { closing: checkoutClosing, close: closeCheckout } = useDelayedClose(() =>
+    setCheckout(false),
+  );
   const reservation = useMutation({
     mutationFn: () =>
       api.reserve({
@@ -157,13 +161,13 @@ export function Booking() {
         </aside>
       </div>
       {checkout && (
-        <div className="modal">
+        <div className={`modal${checkoutClosing ? " is-closing" : ""}`}>
           <PaymentForm
             clientSecret={paymentIntent.data?.clientSecret ?? null}
             amountPence={paymentIntent.data?.amountPence ?? total}
             label="Confirm booking"
             onSuccess={confirm}
-            onCancel={() => setCheckout(false)}
+            onCancel={closeCheckout}
           >
             {paymentIntent.isError && (
               <p className="error">{(paymentIntent.error as Error).message}</p>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sparkles, RotateCcw, X } from "lucide-react";
+import { useDelayedClose } from "../lib/useDelayedClose";
 type Message = { role: "user" | "assistant"; text: string; draftUrl?: string };
 const starters = [
   "Find a family film tomorrow",
@@ -17,6 +18,7 @@ export function ChatAssistant() {
       },
     ]),
     [busy, setBusy] = useState(false);
+  const { closing, close } = useDelayedClose(() => setOpen(false));
   const send = async (text = input) => {
     if (!text.trim() || busy) return;
     setMessages((m) => [...m, { role: "user", text }]);
@@ -85,11 +87,11 @@ export function ChatAssistant() {
         <Sparkles size={16} aria-hidden="true" /> <span>Ask Cinebot</span>
       </button>
       {open && (
-        <div className="chat-layer">
+        <div className={`chat-layer${closing ? " is-closing" : ""}`}>
           <button
             className="chat-backdrop"
             aria-label="Close booking assistant"
-            onClick={() => setOpen(false)}
+            onClick={close}
           />
           <aside
             className="chat-drawer"
@@ -114,7 +116,7 @@ export function ChatAssistant() {
                 >
                   <RotateCcw size={16} aria-hidden="true" />
                 </button>
-                <button onClick={() => setOpen(false)} aria-label="Close">
+                <button onClick={close} aria-label="Close">
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>
