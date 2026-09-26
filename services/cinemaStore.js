@@ -218,9 +218,27 @@ async function createPaymentIntent(reservationId, email, discount) {
   };
 }
 
-function confirm({ reservationId, email, payment, discountPercent, promoCode }) {
-  const { reservation, screening, seats, totalPence: fullTotalPence } =
-    getReservationTotal(reservationId);
+function confirm({
+  reservationId,
+  email,
+  payment,
+  discountPercent,
+  promoCode,
+}) {
+  // Idempotent per PaymentIntent: the browser and the Stripe webhook can both
+  // confirm the same payment, and the second caller gets the same booking.
+  if (payment.stripePaymentIntentId)
+    for (const existing of bookings.values())
+      if (
+        existing.payment.stripePaymentIntentId === payment.stripePaymentIntentId
+      )
+        return existing;
+  const {
+    reservation,
+    screening,
+    seats,
+    totalPence: fullTotalPence,
+  } = getReservationTotal(reservationId);
   const totalPence = Math.round(
     (fullTotalPence * (100 - (discountPercent || 0))) / 100,
   );
