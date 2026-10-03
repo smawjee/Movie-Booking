@@ -133,6 +133,12 @@ input,
 select {
   font: inherit;
 }
+/* Windows Chrome draws the open option list on white but keeps the select's
+   light text colour, so give options their own dark colours. */
+select option {
+  background: #1c1c1f;
+  color: #f5f5f7;
+}
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
