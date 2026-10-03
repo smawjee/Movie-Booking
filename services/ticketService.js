@@ -236,8 +236,13 @@ async function deliver(booking, to = booking.email) {
     previews.set(id, { html: content, expires: Date.now() + 30 * 60000 });
     return { status: "preview", previewUrl: `/api/ticket-previews/${id}` };
   }
+  // The QR in the email body is the ticket itself, so a PDF failure should
+  // cost the attachment, not the whole email.
   const [attachment, qr] = await Promise.all([
-    pdf(booking),
+    pdf(booking).catch((error) => {
+      console.error("[ticket pdf attachment]", error.message);
+      return null;
+    }),
     QRCode.toBuffer(token(booking), { width: 320, margin: 4 }),
   ]);
   const result = await mail.sendMail({
@@ -245,13 +250,17 @@ async function deliver(booking, to = booking.email) {
     to,
     subject: `Your Cinego ticket: ${booking.screening.movieTitle}`,
     html: content,
-    text: `Your Cinego booking ${booking.reference}: ${booking.screening.movieTitle}, ${booking.screening.date} at ${booking.screening.time}. Seats: ${booking.seats.map((s) => `${s.row}${s.number}`).join(", ")}. Your PDF ticket is attached.`,
+    text: `Your Cinego booking ${booking.reference}: ${booking.screening.movieTitle}, ${booking.screening.date} at ${booking.screening.time}. Seats: ${booking.seats.map((s) => `${s.row}${s.number}`).join(", ")}.${attachment ? " Your PDF ticket is attached." : ""}`,
     attachments: [
-      {
-        filename: `${booking.reference}.pdf`,
-        content: attachment,
-        contentType: "application/pdf",
-      },
+      ...(attachment
+        ? [
+            {
+              filename: `${booking.reference}.pdf`,
+              content: attachment,
+              contentType: "application/pdf",
+            },
+          ]
+        : []),
       {
         filename: "ticket-qr.png",
         content: qr,
