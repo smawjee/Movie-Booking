@@ -1,24 +1,23 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { api, money } from "../lib/api";
-import type { Booking } from "../types";
 import { confirmationRoute } from "../routes";
+import { TicketActions } from "../components/TicketActions";
 
 export function Confirmation() {
   const { reference } = confirmationRoute.useSearch();
   const booking = useQuery({
     queryKey: ["booking", reference],
-    queryFn: () =>
-      fetch(`/api/bookings/${reference}`).then(
-        (r) => r.json() as Promise<Booking>,
-      ),
+    queryFn: () => api.booking(reference),
+    enabled: Boolean(reference),
   });
   const ticketData = useQuery({
     queryKey: ["ticket-data", reference],
     queryFn: () => api.ticketData(reference),
     enabled: Boolean(booking.data),
   });
-  const resend = useMutation({ mutationFn: () => api.resendTicket(reference) });
+  const delivery = booking.data?.emailDelivery;
   return (
     <section className="section narrow">
       {booking.data ? (
@@ -40,7 +39,13 @@ export function Confirmation() {
           </p>
           <strong>{money(booking.data.totalPence)}</strong>
           <p>
-            Ticket delivery: {booking.data.emailDelivery?.status || "queued"}
+            {delivery?.status === "sent"
+              ? "Ticket email sent to your booking email address."
+              : delivery?.status === "preview"
+                ? "Email delivery is not configured. Download your ticket or open the email preview below."
+                : delivery?.status === "failed"
+                  ? "Email delivery failed. Your booking is confirmed; you can retry below."
+                  : "Your ticket is ready. Send it to your booking email address below."}
           </p>
           <div className="ticket-qr">
             {ticketData.data ? (
@@ -49,30 +54,36 @@ export function Confirmation() {
                 alt="Booking entry QR code"
               />
             ) : (
-              <span>Generating QR…</span>
+              <span>
+                {ticketData.isError
+                  ? "QR unavailable. Download your PDF ticket or retry."
+                  : "Generating QR…"}
+                {ticketData.isError && (
+                  <button onClick={() => void ticketData.refetch()}>
+                    Retry
+                  </button>
+                )}
+              </span>
             )}
             <small>Scan at the auditorium entrance</small>
           </div>
-          <div className="ticket-actions">
-            <a className="button" href={`/api/tickets/${reference}/download`}>
-              Download PDF
-            </a>
-            <button
-              className="button secondary"
-              disabled={resend.isPending}
-              onClick={() => resend.mutate()}
-            >
-              {resend.isPending ? "Sending…" : "Resend email"}
-            </button>
-          </div>
-          {resend.data?.previewUrl && (
-            <a href={resend.data.previewUrl} target="_blank">
-              Open local email preview
-            </a>
-          )}
+          <TicketActions
+            reference={booking.data.reference}
+            initialDelivery={delivery}
+            onSent={() => void booking.refetch()}
+          />
+          <Link to="/account" search={{ tab: "tickets" }} className="text-button">
+            View all your tickets in your account
+          </Link>
         </article>
       ) : (
-        <div className="empty">Loading ticket…</div>
+        <div className="empty" role="status">
+          {!reference
+            ? "No booking reference provided."
+            : booking.isError
+              ? booking.error.message
+              : "Loading ticket…"}
+        </div>
       )}
     </section>
   );

@@ -18,9 +18,9 @@ const FALLBACK_PUBLISHABLE_KEY =
 const publishableKey =
   (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) ||
   FALLBACK_PUBLISHABLE_KEY;
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+export const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
-const appearance = {
+export const appearance = {
   theme: "night" as const,
   variables: {
     colorPrimary: "#f5c948",
@@ -40,7 +40,7 @@ function StripeCheckoutForm({
 }: {
   amountPence: number;
   label: string;
-  onSuccess: (paymentIntentId: string) => void;
+  onSuccess: (paymentIntentId: string) => void | Promise<void>;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -64,7 +64,16 @@ function StripeCheckoutForm({
       setProcessing(false);
       return;
     }
-    onSuccess(paymentIntent.id);
+    // Stripe has taken the payment; if finishing the purchase on our side
+    // fails, say so instead of leaving the button stuck on "Processing".
+    try {
+      await onSuccess(paymentIntent.id);
+    } catch (finishError) {
+      setError(
+        `${finishError instanceof Error ? finishError.message : "Something went wrong"}. Your card was charged — please contact support with reference ${paymentIntent.id}.`,
+      );
+      setProcessing(false);
+    }
   };
   return (
     <form className="form-grid" onSubmit={submit}>
@@ -96,7 +105,7 @@ export function PaymentForm({
   customerSessionClientSecret?: string | null;
   amountPence: number;
   label: string;
-  onSuccess: (paymentIntentId: string) => void;
+  onSuccess: (paymentIntentId: string) => void | Promise<void>;
   onCancel?: () => void;
   children?: ReactNode;
 }) {

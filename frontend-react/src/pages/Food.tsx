@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Plus, Minus } from "lucide-react";
 import { money } from "../lib/api";
+import { useMyMembership, useSession } from "../lib/hooks";
 import { PageHero } from "../components/PageHero";
 
 const products = [
@@ -35,12 +36,23 @@ const products = [
   },
 ];
 
+// Food discounts by plan (Silver has none on food).
+const foodDiscount: Record<string, number> = {
+  gold: 10,
+  platinum: 15,
+  student: 20,
+};
+
 export function Food() {
   const [basket, setBasket] = useState<Record<string, number>>({});
-  const basketTotal = products.reduce(
+  const session = useSession();
+  const mine = useMyMembership(Boolean(session));
+  const discount = mine.data ? foodDiscount[mine.data.plan] || 0 : 0;
+  const subtotal = products.reduce(
     (sum, item) => sum + item.price * (basket[item.name] || 0),
     0,
   );
+  const basketTotal = Math.round((subtotal * (100 - discount)) / 100);
   return (
     <section className="section">
       <span className="eyebrow">Express collection</span>
@@ -104,8 +116,12 @@ export function Food() {
           <span>Your food order</span>
           <strong>
             {Object.values(basket).reduce((a, b) => a + b, 0)} items ·{" "}
+            {discount > 0 && subtotal > 0 && <s>{money(subtotal)}</s>}{" "}
             {money(basketTotal)}
           </strong>
+          {discount > 0 && (
+            <small>{discount}% member discount on food</small>
+          )}
         </div>
         <Link className="button" to="/movies" search={{}}>
           Add to a booking

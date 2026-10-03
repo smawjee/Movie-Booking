@@ -1,5 +1,57 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "./api";
+import type { Session } from "@supabase/supabase-js";
+import { account, api } from "./api";
+import { supabase, supabaseConfigured } from "./supabase";
+
+/** Current Supabase session: undefined while loading, null when signed out. */
+export function useSession() {
+  const [session, setSession] = useState<Session | null | undefined>(
+    supabaseConfigured ? undefined : null,
+  );
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const listener = supabase.auth.onAuthStateChange((_event, next) =>
+      setSession(next),
+    );
+    return () => listener.data.subscription.unsubscribe();
+  }, []);
+  return session;
+}
+
+export function useProfile(enabled: boolean) {
+  return useQuery({
+    queryKey: ["account", "profile"],
+    queryFn: account.profile,
+    enabled,
+    retry: false,
+    // Simulated document reviews settle a few seconds after submission.
+    refetchInterval: (query) => {
+      const p = query.state.data;
+      return p?.identity.status === "pending" || p?.student.status === "pending"
+        ? 1500
+        : false;
+    },
+  });
+}
+
+export function useMyBookings(enabled: boolean) {
+  return useQuery({
+    queryKey: ["account", "bookings"],
+    queryFn: account.bookings,
+    enabled,
+  });
+}
+
+export function useSavedCards(enabled: boolean) {
+  return useQuery({
+    queryKey: ["account", "cards"],
+    queryFn: account.cards,
+    enabled,
+    retry: false,
+  });
+}
 
 export function useReservationPaymentIntent(
   reservationId: string | null,
@@ -7,7 +59,7 @@ export function useReservationPaymentIntent(
   promoCode?: string,
 ) {
   return useQuery({
-    queryKey: ["payment-intent", "reservation", reservationId, promoCode || ""],
+    queryKey: ["payment-intent", "reservation", reservationId, email, promoCode || ""],
     queryFn: () =>
       api.createPaymentIntent(reservationId as string, email, promoCode),
     enabled: Boolean(reservationId && email),

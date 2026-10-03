@@ -7,7 +7,7 @@ const store = require("../../services/store");
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 60_000, limit: 15 });
 const sensitive =
-  /\b(?:\d[ -]*?){13,19}\b|\bcvv\b|security code|date of birth|password/gi;
+  /\b(?:\d[ -]*?){13,19}\b|\bcvv\b|security code|date of birth|password/i;
 const schema = z.object({
   message: z.string().min(1).max(500),
   history: z

@@ -1,9 +1,20 @@
-import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { api, money } from "../lib/api";
-import { useReservationPaymentIntent } from "../lib/hooks";
-import type { AgeConfirmation, Screening, Seat } from "../types";
+import { BadgeCheck } from "lucide-react";
+import { ApiError, api, money } from "../lib/api";
+import {
+  useProfile,
+  useReservationPaymentIntent,
+  useSession,
+} from "../lib/hooks";
+import { minimumAgeFor } from "../lib/age";
+import type {
+  AgeConfirmation,
+  PaymentIntentResponse,
+  Screening,
+  Seat,
+} from "../types";
 import { AgeGate } from "../components/AgeGate";
 import { PaymentForm } from "../components/PaymentForm";
 import { bookingRoute } from "../routes";
@@ -33,6 +44,26 @@ export function Booking() {
   const { closing: checkoutClosing, close: closeCheckout } = useDelayedClose(() =>
     setCheckout(false),
   );
+  const session = useSession();
+  const profile = useProfile(Boolean(session));
+  useEffect(() => {
+    if (session?.user.email) setEmail((current) => current || session.user.email!);
+  }, [session]);
+  // An ID-verified account has a checked date of birth: no need to ask again.
+  const verified = profile.data?.identity.status === "verified" ? profile.data : null;
+  const rating = detail.data?.rating;
+  useEffect(() => {
+    if (!verified || !rating || age) return;
+    if (verified.age !== null && verified.age >= minimumAgeFor(rating) && verified.ageBand)
+      setAge({
+        rating,
+        ageBand: verified.ageBand,
+        declared: true,
+        policyVersion: "uk-2026-1",
+        confirmedAt: new Date().toISOString(),
+      });
+  }, [verified, rating, age]);
+  const [freeError, setFreeError] = useState("");
   const reservation = useMutation({
     mutationFn: () =>
       api.reserve({
@@ -51,12 +82,23 @@ export function Booking() {
     email,
     promoCode || undefined,
   );
+  const finish = async (reference: string) => {
+    await api.emailTicket(reference).catch(() => null);
+    navigate({ to: "/confirmation", search: { reference } });
+  };
   const confirm = async (paymentIntentId: string) => {
     if (!hold) return;
     const booking = await api.pay({ reservationId: hold, email, paymentIntentId });
-    await api.emailTicket(booking.reference).catch(() => null);
-    navigate({ to: "/confirmation", search: { reference: booking.reference } });
+    await finish(booking.reference);
   };
+  const confirmFree = useMutation({
+    mutationFn: () => api.confirmFree(hold!, email, promoCode || undefined),
+    onSuccess: (booking) => finish(booking.reference),
+    onError: (error) => setFreeError(error.message),
+  });
+  const needsId =
+    reservation.error instanceof ApiError &&
+    reservation.error.code === "ID_VERIFICATION_REQUIRED";
   if (detail.isLoading)
     return <section className="section empty">Loading screening…</section>;
   if (!detail.data)
@@ -155,31 +197,85 @@ export function Booking() {
           >
             Hold seats and pay
           </button>
+          {!session && (
+            <p className="muted small">
+              <Link to="/account">Sign in</Link> to save this ticket to your
+              account, use saved cards and get member or student discounts.
+            </p>
+          )}
           {reservation.error && (
-            <p className="error">{reservation.error.message}</p>
+            <p className="error" role="alert">
+              {reservation.error.message}{" "}
+              {needsId && (
+                <Link to="/account" search={{ tab: "verification" }}>
+                  Verify your ID
+                </Link>
+              )}
+            </p>
           )}
         </aside>
       </div>
       {checkout && (
         <div className={`modal${checkoutClosing ? " is-closing" : ""}`}>
-          <PaymentForm
-            clientSecret={paymentIntent.data?.clientSecret ?? null}
-            amountPence={paymentIntent.data?.amountPence ?? total}
-            label="Confirm booking"
-            onSuccess={confirm}
-            onCancel={closeCheckout}
-          >
-            {paymentIntent.isError && (
-              <p className="error">{(paymentIntent.error as Error).message}</p>
-            )}
-            {!!paymentIntent.data?.discountPence && (
-              <p className="notice">
-                Promo applied: −{money(paymentIntent.data.discountPence)}
-              </p>
-            )}
-          </PaymentForm>
+          {paymentIntent.data?.free ? (
+            <div className="payment card">
+              <span className="eyebrow">Member benefit</span>
+              <h2>Nothing to pay</h2>
+              <DiscountSummary data={paymentIntent.data} />
+              {freeError && (
+                <p className="error" role="alert">
+                  {freeError}
+                </p>
+              )}
+              <div className="ticket-actions">
+                <button
+                  className="button"
+                  disabled={confirmFree.isPending}
+                  onClick={() => confirmFree.mutate()}
+                >
+                  {confirmFree.isPending ? "Confirming…" : "Confirm free booking"}
+                </button>
+                <button className="button secondary" onClick={closeCheckout}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <PaymentForm
+              clientSecret={paymentIntent.data?.clientSecret ?? null}
+              customerSessionClientSecret={
+                paymentIntent.data?.customerSessionClientSecret
+              }
+              amountPence={paymentIntent.data?.amountPence ?? total}
+              label="Confirm booking"
+              onSuccess={confirm}
+              onCancel={closeCheckout}
+            >
+              {paymentIntent.isError && (
+                <p className="error">{(paymentIntent.error as Error).message}</p>
+              )}
+              {paymentIntent.data && <DiscountSummary data={paymentIntent.data} />}
+            </PaymentForm>
+          )}
         </div>
       )}
     </section>
+  );
+}
+
+function DiscountSummary({ data }: { data: PaymentIntentResponse }) {
+  if (!data.discountPence) return null;
+  return (
+    <div className="discount-summary" role="status">
+      <p>
+        <BadgeCheck size={16} aria-hidden="true" />{" "}
+        {data.discountLabels?.join(" · ") || "Discount applied"}
+      </p>
+      <p>
+        {data.fullPence !== undefined && <s>{money(data.fullPence)}</s>}{" "}
+        <strong>{money(data.amountPence)}</strong>{" "}
+        <small>you save {money(data.discountPence)}</small>
+      </p>
+    </div>
   );
 }

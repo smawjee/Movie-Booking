@@ -71,7 +71,7 @@ function buildScreenings(
         posterPath: movie.poster_path,
         cinema,
         date,
-        time: `${String(hour).padStart(2, "0")}:${slot % 2 ? "30" : "00"}`,
+        time: `${String(hour).padStart(2, "0")}:00`,
         screen: 1 + ((index + slot) % 10),
         experience: exp,
         pricePence: 899 + exp.surchargePence,
@@ -190,39 +190,69 @@ function getReservationTotal(reservationId) {
   return { reservation, screening, seats, totalPence };
 }
 
-async function createPaymentIntent(reservationId, email, discount) {
-  const { totalPence } = getReservationTotal(reservationId);
+async function getReservationQuote(reservationId) {
+  const { screening, seats } = getReservationTotal(reservationId);
+  return {
+    seats: seats.map((s) => ({ tier: s.tier, pricePence: s.pricePence })),
+    date: screening.date,
+    experienceId: screening.experience.id,
+    rating: screening.rating,
+  };
+}
+
+// Stripe metadata is what /bookings/confirm trusts later (never the client),
+// so everything confirm() needs to reproduce the charged total goes in here.
+function pricingMetadata(reservationId, email, pricing, account = {}) {
+  return {
+    reservationId,
+    email,
+    kind: "booking",
+    userId: account.userId || "",
+    promoCode: pricing.promoCode || "",
+    discountPercent: String(pricing.discountPercent || 0),
+    discountPence: String(pricing.discountPence || 0),
+    discountSource: pricing.source || "none",
+    usesFreeTicket: pricing.usesFreeTicket ? "true" : "",
+  };
+}
+
+async function createPaymentIntent(reservationId, email, pricing, account = {}) {
   if (!stripeConfigured)
     throw Object.assign(new Error("Payments are not configured"), {
       status: 500,
     });
-  const amountPence = discount
-    ? Math.round((totalPence * (100 - discount.discountPercent)) / 100)
-    : totalPence;
   const intent = await stripe.paymentIntents.create({
-    amount: amountPence,
+    amount: pricing.amountPence,
     currency: "gbp",
     payment_method_types: ["card"],
-    metadata: {
-      reservationId,
-      email,
-      kind: "booking",
-      promoCode: discount?.code || "",
-      discountPercent: String(discount?.discountPercent || 0),
-    },
+    ...(account.customerId && {
+      customer: account.customerId,
+      setup_future_usage: "off_session",
+    }),
+    metadata: pricingMetadata(reservationId, email, pricing, account),
   });
   return {
     clientSecret: intent.client_secret,
-    amountPence,
-    discountPence: totalPence - amountPence,
+    amountPence: pricing.amountPence,
+    discountPence: pricing.savingsPence,
   };
 }
 
-function confirm({ reservationId, email, payment, discountPercent, promoCode }) {
+function confirm({
+  reservationId,
+  email,
+  payment,
+  discountPercent,
+  discountPence: fixedDiscountPence,
+  promoCode,
+  userId,
+}) {
   const { reservation, screening, seats, totalPence: fullTotalPence } =
     getReservationTotal(reservationId);
-  const totalPence = Math.round(
-    (fullTotalPence * (100 - (discountPercent || 0))) / 100,
+  const totalPence = Math.max(
+    0,
+    Math.round((fullTotalPence * (100 - (discountPercent || 0))) / 100) -
+      (fixedDiscountPence || 0),
   );
   const discountPence = fullTotalPence - totalPence;
   const reference = `CG-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
@@ -246,6 +276,8 @@ function confirm({ reservationId, email, payment, discountPercent, promoCode }) 
     payment: safePayment,
     ageConfirmation: reservation.ageConfirmation,
     emailDelivery: { status: "queued" },
+    userId: userId || null,
+    createdAt: new Date().toISOString(),
   };
   bookings.set(reference, booking);
   reservation.status = "confirmed";
@@ -292,13 +324,34 @@ const membershipPlans = [
       "Free large popcorn monthly",
     ],
   },
+  {
+    id: "student",
+    name: "Student",
+    pricePence: 499,
+    discountPercent: 25,
+    tag: "Verified students",
+    style: "student",
+    requiresStudent: true,
+    perks: [
+      "25% off every ticket",
+      "1 free Standard 2D ticket every month",
+      "£3 tickets every Tuesday",
+      "Free RealD 3D upgrades",
+      "20% off food & drinks",
+    ],
+  },
 ];
 function publicBooking(booking) {
-  const { email, payment, ...rest } = booking;
+  const { email, payment, userId, ...rest } = booking;
   return rest;
 }
 async function getBooking(reference) {
   return bookings.get(reference) || null;
+}
+async function listBookingsForUser(userId, email) {
+  return [...bookings.values()]
+    .filter((b) => (userId && b.userId === userId) || (email && b.email === email))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 async function updateDeliveryStatus(reference, result) {
   const booking = bookings.get(reference);
@@ -310,10 +363,13 @@ module.exports = {
   getScreening,
   getSeats,
   reserve,
+  getReservationQuote,
+  pricingMetadata,
   createPaymentIntent,
   confirm,
   bookings,
   getBooking,
+  listBookingsForUser,
   updateDeliveryStatus,
   publicBooking,
   membershipPlans,

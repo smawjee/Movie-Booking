@@ -1,17 +1,25 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+} from "@tanstack/react-router";
+// Heavier pages (Stripe checkout, account) load on demand.
 import { Shell } from "./Shell";
 import { Home } from "./pages/Home";
 import { Movies } from "./pages/Movies";
-import { Premium } from "./pages/Premium";
-import { Booking } from "./pages/Booking";
-import { Membership } from "./pages/Membership";
-import { Confirmation } from "./pages/Confirmation";
-import { Food } from "./pages/Food";
-import { ComingSoon } from "./pages/ComingSoon";
-import { Account } from "./pages/Account";
 import { AuthCallback } from "./pages/AuthCallback";
+import { NotFound } from "./pages/NotFound";
 
-const rootRoute = createRootRoute({ component: Shell });
+const rootRoute = createRootRoute({
+  component: Shell,
+  notFoundComponent: NotFound,
+});
+const trailersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/trailers",
+  component: lazyRouteComponent(() => import("./pages/Trailers"), "Trailers"),
+});
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
@@ -28,7 +36,7 @@ export const moviesRoute = createRoute({
 const premiumRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/premium",
-  component: Premium,
+  component: lazyRouteComponent(() => import("./pages/Premium"), "Premium"),
 });
 export const bookingRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -36,12 +44,12 @@ export const bookingRoute = createRoute({
   validateSearch: (s: Record<string, unknown>) => ({
     screening: String(s.screening || ""),
   }),
-  component: Booking,
+  component: lazyRouteComponent(() => import("./pages/Booking"), "Booking"),
 });
 const membershipRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/membership",
-  component: Membership,
+  component: lazyRouteComponent(() => import("./pages/Membership"), "Membership"),
 });
 export const confirmationRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -49,22 +57,33 @@ export const confirmationRoute = createRoute({
   validateSearch: (s: Record<string, unknown>) => ({
     reference: String(s.reference || ""),
   }),
-  component: Confirmation,
+  component: lazyRouteComponent(() => import("./pages/Confirmation"), "Confirmation"),
 });
 const foodRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/food",
-  component: Food,
+  component: lazyRouteComponent(() => import("./pages/Food"), "Food"),
 });
 const comingSoonRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/coming-soon",
-  component: ComingSoon,
+  component: lazyRouteComponent(() => import("./pages/ComingSoon"), "ComingSoon"),
 });
-const accountRoute = createRoute({
+const accountTabs = [
+  "tickets",
+  "membership",
+  "payments",
+  "verification",
+  "profile",
+] as const;
+export type AccountTab = (typeof accountTabs)[number];
+export const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
-  component: Account,
+  validateSearch: (s: Record<string, unknown>): { tab?: AccountTab } => ({
+    tab: accountTabs.includes(s.tab as AccountTab) ? (s.tab as AccountTab) : undefined,
+  }),
+  component: lazyRouteComponent(() => import("./pages/Account"), "Account"),
 });
 const authCallbackRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -82,6 +101,7 @@ const routeTree = rootRoute.addChildren([
   comingSoonRoute,
   accountRoute,
   authCallbackRoute,
+  trailersRoute,
 ]);
 export const router = createRouter({ routeTree });
 declare module "@tanstack/react-router" {

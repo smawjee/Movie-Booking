@@ -1,44 +1,55 @@
-import { useState } from "react";
-import { Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { Search, CircleUserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { CircleUserRound, Menu, X } from "lucide-react";
 import { ChatAssistant } from "./components/ChatAssistant";
 import { OffersBanner } from "./components/OffersBanner";
+import { SearchSuggest } from "./components/SearchSuggest";
 
 export function Shell() {
-  const [siteSearch, setSiteSearch] = useState("");
-  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) =>
+      event.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
   return (
     <>
       <a className="skip" href="#content">
         Skip to content
       </a>
-      <header className="header">
-        <Link to="/" className="brand">
+      <header className={`header${menuOpen ? " menu-open" : ""}`}>
+        <Link to="/" className="brand" aria-label="Cinego home" title="Home">
           <img src="/cinego-logo.svg" alt="Cinego" />
         </Link>
-        <nav>
+        <button
+          type="button"
+          className="menu-toggle"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="site-nav"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        <nav id="site-nav">
+          <Link to="/" activeOptions={{ exact: true }}>
+            Home
+          </Link>
           <Link to="/movies">Movies</Link>
           <Link to="/coming-soon">Coming soon</Link>
+          <Link to="/trailers">Trailers</Link>
           <Link to="/premium">Premium screens</Link>
           <Link to="/food">Food & drinks</Link>
           <Link to="/membership">Membership</Link>
-          <Link to="/account">Account</Link>
+          <Link to="/account" className="nav-account-text">
+            Account
+          </Link>
         </nav>
-        <form
-          className="nav-search"
-          onSubmit={(event) => {
-            event.preventDefault();
-            navigate({ to: "/movies", search: { movie: siteSearch } });
-          }}
-        >
-          <Search size={16} aria-hidden="true" />
-          <input
-            aria-label="Search films"
-            placeholder="Search films"
-            value={siteSearch}
-            onChange={(event) => setSiteSearch(event.target.value)}
-          />
-        </form>
+        <SearchSuggest onNavigate={() => setMenuOpen(false)} />
         <Link to="/membership" className="nav-member">
           Cinego+
         </Link>
@@ -59,8 +70,10 @@ export function Shell() {
           </div>
           <div>
             <h3>Explore</h3>
+            <Link to="/">Home</Link>
             <Link to="/movies">Movies</Link>
             <Link to="/coming-soon">Coming soon</Link>
+            <Link to="/trailers">Trailers</Link>
             <Link to="/premium">Premium screens</Link>
             <Link to="/food">Food & drinks</Link>
           </div>
@@ -72,7 +85,9 @@ export function Shell() {
         </div>
         <div className="footer-bottom">
           <span>© {new Date().getFullYear()} Cinego</span>
-          <span>Portfolio demonstration project · payments run in Stripe test mode</span>
+          <span>
+            Portfolio demonstration project · payments run in Stripe test mode
+          </span>
         </div>
       </footer>
     </>

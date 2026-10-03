@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { MovieTrie } from "../lib/movieTrie";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Play } from "lucide-react";
+import { Play, SlidersHorizontal } from "lucide-react";
 import { api, money, poster } from "../lib/api";
 import { experiences } from "../lib/experiences";
 import { useTrailers } from "../lib/hooks";
@@ -11,16 +12,19 @@ import type { Trailer } from "../types";
 
 export function Movies() {
   const search = moviesRoute.useSearch();
-  const films = useQuery({ queryKey: ["movies"], queryFn: api.movies });
+  const navigate = moviesRoute.useNavigate();
+  const title = search.movie || "";
+  const setTitle = (movie: string) =>
+    navigate({ search: { movie }, replace: true });
   const trailers = useTrailers();
   const [playing, setPlaying] = useState<Trailer | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const trailerById = new Map(
     (trailers.data || []).map((t) => [t.id, t] as const),
   );
   const [cinema, setCinema] = useState("edinburgh"),
-    [date, setDate] = useState(new Date().toISOString().slice(0, 10)),
+    [date, setDate] = useState(new Date().toLocaleDateString("en-CA")),
     [format, setFormat] = useState(""),
-    [title, setTitle] = useState(search.movie || ""),
     [rating, setRating] = useState(""),
     [genre, setGenre] = useState("");
   const screens = useQuery({
@@ -30,21 +34,42 @@ export function Movies() {
         new URLSearchParams({ cinema, date, ...(format && { format }) }),
       ),
   });
-  const list =
-    films.data?.filter(
-      (m) =>
-        (!title || m.title.toLowerCase().includes(title.toLowerCase())) &&
-        (!rating || m.rating === rating) &&
-        (!genre || m.genre_ids.includes(Number(genre))),
-    ) || [];
+  // The trie only ever holds films this cinema is showing; date and format
+  // then narrow to the screenings on offer.
+  const showing = useQuery({
+    queryKey: ["showing", cinema],
+    queryFn: () => api.showing(cinema),
+    staleTime: 5 * 60 * 1000,
+  });
+  const trie = useMemo(() => new MovieTrie(showing.data || []), [showing.data]);
+  const matches = trie.search(title);
+  const scheduled = new Set(screens.data?.map((s) => s.movieId));
+  const titleMatches = (showing.data || []).filter((m) => matches.has(m.id));
+  const list = titleMatches.filter(
+    (m) =>
+      scheduled.has(m.id) &&
+      (!rating || m.rating === rating) &&
+      (!genre || m.genre_ids.includes(Number(genre))),
+  );
   return (
     <section className="section">
       <span className="eyebrow">Now showing</span>
       <h1 className="page-title">Choose your experience.</h1>
-      <div className="filters card">
+      <div
+        className={`filters card collapsible${filtersOpen ? " expanded" : ""}`}
+      >
         <div className="filter-heading">
           <span className="eyebrow">Find your film</span>
           <strong>{list.length} results</strong>
+          <button
+            type="button"
+            className="filter-toggle"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            <SlidersHorizontal size={15} aria-hidden="true" />
+            {filtersOpen ? "Hide filters" : "Filters"}
+          </button>
         </div>
         <label className="filter-search">
           Film title
@@ -67,6 +92,7 @@ export function Movies() {
           Date
           <input
             type="date"
+            min={new Date().toLocaleDateString("en-CA")}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -127,8 +153,28 @@ export function Movies() {
             <span key={String(value)}>{value}</span>
           ))}
       </div>
-      {films.isLoading || screens.isLoading ? (
+      {showing.isLoading || screens.isLoading ? (
         <div className="empty">Loading showtimes…</div>
+      ) : showing.isError || screens.isError ? (
+        <div className="empty" role="alert">
+          Unable to load showtimes.{" "}
+          <button
+            onClick={() => {
+              void showing.refetch();
+              void screens.refetch();
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      ) : list.length === 0 ? (
+        <div className="empty" role="status">
+          {title && titleMatches.length === 0
+            ? `“${title}” isn’t showing at this cinema. Try another cinema, or browse Coming soon.`
+            : titleMatches.length > 0 && format
+              ? "That film isn’t showing in this format. Try “All formats”."
+              : "No films have showtimes matching these filters. Try another date or format."}
+        </div>
       ) : (
         <div className="screening-list">
           {list.map((movie) => (

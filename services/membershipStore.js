@@ -1,82 +1,45 @@
 const { supabase } = require("./supabaseClient");
 const { stripe, stripeConfigured } = require("./stripeClient");
 const { membershipPlans } = require("./cinemaStore");
+const {
+  getOrCreateStripeCustomer,
+  customerSessionSecret,
+} = require("./stripeCustomers");
+const profiles = require("./profileStore");
 
 // Memberships require a signed-in Supabase user (memberships.user_id is
-// NOT NULL, and membership is now explicitly tied to an account rather than
-// guest-checkout) — so this store is only ever used once Supabase is
-// configured; routes gate on that before calling in here.
+// NOT NULL, and membership is tied to an account rather than guest
+// checkout), so this store is only used once Supabase is configured; routes
+// check for that before calling in here.
+const httpError = (message, status) =>
+  Object.assign(new Error(message), { status });
+
 function findPlan(planId) {
   const found = membershipPlans.find((p) => p.id === planId);
-  if (!found)
-    throw Object.assign(new Error("Unknown membership plan"), {
-      status: 400,
-    });
+  if (!found) throw httpError("Unknown membership plan", 400);
   return found;
 }
 
-// Resolves this user's Stripe Customer, creating one on first use. Never
-// throws — the profiles.stripe_customer_id column may not exist yet (it's a
-// manually-applied migration), and a lookup/save failure here should never
-// block a purchase, only skip the saved-card capability for this checkout.
-async function getOrCreateStripeCustomer(userId, email) {
-  try {
-    const { data: profile, error: readError } = await supabase
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", userId)
-      .maybeSingle();
-    if (readError) throw readError;
-    if (profile?.stripe_customer_id) return profile.stripe_customer_id;
-
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { userId },
-    });
-    const { error: writeError } = await supabase
-      .from("profiles")
-      .upsert({ id: userId, stripe_customer_id: customer.id });
-    if (writeError) throw writeError;
-    return customer.id;
-  } catch (e) {
-    console.warn("getOrCreateStripeCustomer skipped:", e.message);
-    return null;
-  }
+async function assertEligible(userId, plan) {
+  if (plan !== "student") return;
+  const profile = await profiles.getProfile(userId);
+  if (!profiles.isStudent(profile))
+    throw httpError(
+      "The Student plan needs a verified student account. Verify your student status in your account first.",
+      403,
+    );
 }
 
 async function createPaymentIntent(userId, email, plan, discount) {
   const found = findPlan(plan);
-  if (!stripeConfigured)
-    throw Object.assign(new Error("Payments are not configured"), {
-      status: 500,
-    });
+  await assertEligible(userId, plan);
+  if (!stripeConfigured) throw httpError("Payments are not configured", 500);
   const amountPence = discount
     ? Math.round((found.pricePence * (100 - discount.discountPercent)) / 100)
     : found.pricePence;
 
   const customerId = await getOrCreateStripeCustomer(userId, email);
-  let customerSessionClientSecret;
-  if (customerId) {
-    try {
-      const session = await stripe.customerSessions.create({
-        customer: customerId,
-        components: {
-          payment_element: {
-            enabled: true,
-            features: {
-              payment_method_save: "enabled",
-              payment_method_redisplay: "enabled",
-              payment_method_remove: "enabled",
-            },
-          },
-        },
-      });
-      customerSessionClientSecret = session.client_secret;
-    } catch (e) {
-      console.warn("customerSessions.create skipped:", e.message);
-    }
-  }
-
+  const customerSessionClientSecret = await customerSessionSecret(customerId);
   const intent = await stripe.paymentIntents.create({
     amount: amountPence,
     currency: "gbp",
@@ -98,8 +61,19 @@ async function createPaymentIntent(userId, email, plan, discount) {
   };
 }
 
+const mapMembership = (row) =>
+  row && {
+    id: row.id,
+    plan: row.plan_id,
+    status: row.status,
+    renewsAt: row.renews_at,
+    createdAt: row.created_at,
+    cancelledAt: row.cancelled_at || null,
+  };
+
 async function checkoutMembership({ userId, plan, payment, promoCode, discountPence }) {
   findPlan(plan);
+  await assertEligible(userId, plan);
   const { data: membership, error: membershipError } = await supabase
     .from("memberships")
     .insert({
@@ -108,7 +82,7 @@ async function checkoutMembership({ userId, plan, payment, promoCode, discountPe
       status: "active",
       renews_at: new Date(Date.now() + 30 * 86400000).toISOString(),
     })
-    .select("id, plan_id, status, renews_at, created_at")
+    .select("id, plan_id, status, renews_at, created_at, cancelled_at")
     .single();
   if (membershipError) throw membershipError;
 
@@ -125,58 +99,91 @@ async function checkoutMembership({ userId, plan, payment, promoCode, discountPe
     });
   if (paymentError) throw paymentError;
 
-  // A user should only ever have one active membership — retiring any other
-  // active row here is what lets "switch plan" work as a plain repurchase.
+  // A user should only ever have one current membership: retiring the others
+  // here is what lets "switch plan" work as a plain repurchase.
   const { error: retireError } = await supabase
     .from("memberships")
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", renews_at: new Date().toISOString() })
     .eq("user_id", userId)
-    .eq("status", "active")
-    .neq("id", membership.id);
+    .neq("id", membership.id)
+    .or(`status.eq.active,renews_at.gt.${new Date().toISOString()}`);
   if (retireError) throw retireError;
 
-  return {
-    id: membership.id,
-    plan: membership.plan_id,
-    status: membership.status,
-    renewsAt: membership.renews_at,
-    createdAt: membership.created_at,
-  };
+  return mapMembership(membership);
 }
 
+// The current membership: active, or cancelled but still inside the period
+// already paid for (benefits last until renews_at).
 async function getMembership(userId) {
   const { data, error } = await supabase
     .from("memberships")
-    .select("id, plan_id, status, renews_at, created_at")
+    .select("id, plan_id, status, renews_at, created_at, cancelled_at")
     .eq("user_id", userId)
-    .eq("status", "active")
+    .or(`status.eq.active,renews_at.gt.${new Date().toISOString()}`)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  if (!data) return null;
-  return {
-    id: data.id,
-    plan: data.plan_id,
-    status: data.status,
-    renewsAt: data.renews_at,
-    createdAt: data.created_at,
-  };
+  return mapMembership(data) || null;
 }
 
 async function cancelMembership(userId) {
   const current = await getMembership(userId);
-  if (!current)
-    throw Object.assign(new Error("No active membership to cancel"), {
-      status: 404,
-    });
+  if (!current || current.status !== "active")
+    throw httpError("No active membership to cancel", 404);
   const { error } = await supabase
     .from("memberships")
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
     .eq("id", current.id)
     .eq("user_id", userId);
   if (error) throw error;
-  return { cancelled: true };
+  return { cancelled: true, accessUntil: current.renewsAt };
+}
+
+async function resumeMembership(userId) {
+  const current = await getMembership(userId);
+  if (!current || current.status !== "cancelled")
+    throw httpError("There is no cancelled membership to resume", 404);
+  const { data, error } = await supabase
+    .from("memberships")
+    .update({ status: "active", cancelled_at: null })
+    .eq("id", current.id)
+    .eq("user_id", userId)
+    .select("id, plan_id, status, renews_at, created_at, cancelled_at")
+    .single();
+  if (error) throw error;
+  return mapMembership(data);
+}
+
+const periodStart = (membership) => {
+  // Benefits reset on each monthly renewal: the period starts 30 days
+  // before renews_at.
+  const start = new Date(new Date(membership.renewsAt).getTime() - 30 * 86400000);
+  return start.toISOString().slice(0, 10);
+};
+
+async function freeTicketAvailable(userId, membership) {
+  if (membership?.plan !== "student") return false;
+  const { data, error } = await supabase
+    .from("membership_benefit_usage")
+    .select("id")
+    .eq("membership_id", membership.id)
+    .eq("benefit", "free-ticket")
+    .eq("period_start", periodStart(membership))
+    .maybeSingle();
+  if (error) throw error;
+  return !data;
+}
+
+async function recordFreeTicket(userId, membership, bookingReference) {
+  const { error } = await supabase.from("membership_benefit_usage").insert({
+    user_id: userId,
+    membership_id: membership.id,
+    benefit: "free-ticket",
+    period_start: periodStart(membership),
+    booking_reference: bookingReference,
+  });
+  if (error) console.warn("recordFreeTicket failed:", error.message);
 }
 
 module.exports = {
@@ -184,4 +191,7 @@ module.exports = {
   checkoutMembership,
   getMembership,
   cancelMembership,
+  resumeMembership,
+  freeTicketAvailable,
+  recordFreeTicket,
 };

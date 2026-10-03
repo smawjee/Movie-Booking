@@ -58,21 +58,51 @@ export interface Reservation {
   expiresAt: string;
   status: "held";
 }
+export type PlanId = "silver" | "gold" | "platinum" | "student";
 export interface MembershipPlan {
-  id: "silver" | "gold" | "platinum";
+  id: PlanId;
   name: string;
   pricePence: number;
   discountPercent: number;
   tag?: string;
-  style?: "featured" | "premium";
+  style?: "featured" | "premium" | "student";
+  requiresStudent?: boolean;
   perks: string[];
 }
 export interface Membership {
   id: string;
-  plan: "silver" | "gold" | "platinum";
+  plan: PlanId;
   status: "active" | "cancelled";
   renewsAt: string | null;
   createdAt: string;
+  cancelledAt?: string | null;
+}
+export type VerificationStatus = "none" | "pending" | "verified" | "rejected";
+export interface Profile {
+  email: string | null;
+  fullName: string | null;
+  dateOfBirth: string | null;
+  age: number | null;
+  ageBand: AgeConfirmation["ageBand"] | null;
+  identity: { status: VerificationStatus; verifiedAt: string | null };
+  student: {
+    status: VerificationStatus | "expired";
+    email: string | null;
+    verifiedUntil: string | null;
+  };
+}
+export interface SavedCard {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth?: number;
+  expYear?: number;
+  isDefault: boolean;
+}
+export interface DocumentMeta {
+  name: string;
+  type: string;
+  size: number;
 }
 export interface Trailer {
   id: number;
@@ -80,6 +110,11 @@ export interface Trailer {
   trailerKey: string;
   trailerUrl: string;
   rating: string;
+  status?: "now-showing" | "coming-soon";
+  overview?: string;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  releaseDate?: string;
 }
 export interface Offer {
   code: string;
@@ -87,10 +122,13 @@ export interface Offer {
   discountPercent: number;
 }
 export interface PaymentIntentResponse {
-  clientSecret: string;
+  clientSecret: string | null;
   amountPence: number;
   discountPence: number;
   customerSessionClientSecret?: string | null;
+  fullPence?: number;
+  discountLabels?: string[];
+  free?: boolean;
 }
 export interface AgeConfirmation {
   rating: string;
@@ -111,6 +149,7 @@ export interface Booking {
     status: "queued" | "sent" | "preview" | "failed";
     previewUrl?: string;
   };
+  createdAt?: string;
 }
 export interface BookingDraft {
   id: string;
