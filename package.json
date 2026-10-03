@@ -11,7 +11,7 @@
     "format:check": "prettier --check \"frontend/**/*.{js,css,html}\" \"frontend-react/**/*.{ts,tsx,css,html,json}\" \"backend/**/*.js\" \"services/**/*.js\" package.json README.md",
     "typecheck": "tsc -p frontend-react/tsconfig.json",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run build && node --check backend/index.js && node --check backend/routes/movies.js && node --check backend/routes/cinema.js && node --check backend/routes/tickets.js && node --check backend/routes/assistant.js"
+    "check": "npm run typecheck && npm run build && node --check backend/index.js && node --check backend/routes/movies.js && node --check backend/routes/cinema.js && node --check backend/routes/tickets.js && node --check backend/routes/assistant.js && node --check backend/routes/stripeWebhook.js"
   },
   "keywords": [],
   "author": "",

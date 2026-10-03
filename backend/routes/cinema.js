@@ -12,6 +12,7 @@ const {
   getOrCreateStripeCustomer,
   customerSessionSecret,
 } = require("../../services/stripeCustomers");
+const { confirmFromIntent } = require("../../services/bookingConfirmation");
 const router = express.Router();
 const bookingLookupLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -53,9 +54,7 @@ router.get("/screenings/upcoming", async (req, res) => {
     res.json(
       await store.buildScreenings(movies, {
         cinema: String(req.query.cinema || "edinburgh"),
-        date: String(
-          req.query.date || defaultDate.toISOString().slice(0, 10),
-        ),
+        date: String(req.query.date || defaultDate.toISOString().slice(0, 10)),
         format: req.query.format ? String(req.query.format) : undefined,
       }),
     );
@@ -268,32 +267,7 @@ router.post("/bookings/confirm", async (req, res) => {
       return res
         .status(400)
         .json({ error: "Payment does not match this reservation" });
-    const card = intent.latest_charge?.payment_method_details?.card;
-    const payment = {
-      reference: intent.id,
-      brand: card?.brand || "unknown",
-      last4: card?.last4 || "0000",
-      amountPence: intent.amount_received,
-      status: "paid",
-      createdAt: new Date(intent.created * 1000).toISOString(),
-      stripePaymentIntentId: intent.id,
-    };
-    const userId = intent.metadata.userId || null;
-    const booking = await store.confirm({
-      reservationId: parsed.data.reservationId,
-      email: parsed.data.email,
-      payment,
-      discountPercent: Number(intent.metadata.discountPercent || 0),
-      discountPence: Number(intent.metadata.discountPence || 0),
-      promoCode: intent.metadata.promoCode || null,
-      userId,
-    });
-    if (intent.metadata.usesFreeTicket && userId) {
-      const membership = await store.getMembership(userId);
-      if (membership)
-        await store.recordFreeTicket(userId, membership, booking.reference);
-    }
-    res.status(201).json(booking);
+    res.status(201).json(await confirmFromIntent(intent));
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
   }

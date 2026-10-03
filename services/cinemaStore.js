@@ -247,6 +247,14 @@ function confirm({
   promoCode,
   userId,
 }) {
+  // Idempotent per PaymentIntent: the browser and the Stripe webhook can both
+  // confirm the same payment, and the second caller gets the same booking.
+  if (payment.stripePaymentIntentId)
+    for (const existing of bookings.values())
+      if (
+        existing.payment.stripePaymentIntentId === payment.stripePaymentIntentId
+      )
+        return existing;
   const { reservation, screening, seats, totalPence: fullTotalPence } =
     getReservationTotal(reservationId);
   const totalPence = Math.max(
