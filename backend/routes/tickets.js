@@ -16,6 +16,13 @@ const readLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+const deliveryFailureReasons = {
+  EAUTH: "the email account login was rejected",
+  ETIMEDOUT: "the mail server could not be reached",
+  ESOCKET: "the mail server connection failed",
+  ECONNECTION: "the mail server could not be reached",
+  EENVELOPE: "the address was rejected",
+};
 const recipient = z.object({ to: z.string().email().max(254).optional() });
 async function send(req, res) {
   const parsed = recipient.safeParse(req.body || {});
@@ -30,10 +37,14 @@ async function send(req, res) {
     res.json(result);
   } catch (error) {
     await store.updateDeliveryStatus(req.params.reference, { status: "failed" });
-    console.error("[ticket delivery]", error.message);
-    res
-      .status(502)
-      .json({ error: "Ticket email failed; your booking is still confirmed" });
+    console.error("[ticket delivery]", error.code, error.message);
+    // Only the provider's error code goes to the browser, never the message,
+    // so a failed send can be diagnosed without exposing server details.
+    const reason = deliveryFailureReasons[error.code];
+    res.status(502).json({
+      error: `Ticket email failed${reason ? ` (${reason})` : ""}; your booking is still confirmed`,
+      code: error.code || "UNKNOWN",
+    });
   }
 }
 router.post("/tickets/:reference/email", limiter, send);
