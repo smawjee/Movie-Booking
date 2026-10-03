@@ -6,6 +6,8 @@ const fs = require("fs");
 
 const app = express();
 app.use(cors());
+// Must come before express.json(): Stripe signature checks need the raw body.
+app.use("/api", require("./routes/stripeWebhook"));
 app.use(express.json());
 
 const movieRoutes = require("./routes/movies");
@@ -36,6 +38,7 @@ app.get("/api/health", (req, res) => {
     ),
     gmail: Boolean(process.env.SMTP_USER && process.env.SMTP_PASS),
     stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+    stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
   };
   res.json({
     ok: true,
