@@ -6,8 +6,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 const require = createRequire(import.meta.url);
 process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
 process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_secret";
-delete process.env.SUPABASE_URL;
-delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Blank rather than delete: the app loads .env with dotenv, which would
+// refill deleted keys and point this test at the real database.
+process.env.SUPABASE_URL = "";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "";
 const app = require("../index.js");
 const { stripe } = require("../../services/stripeClient");
 const memoryStore = require("../../services/cinemaStore");

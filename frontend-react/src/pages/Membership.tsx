@@ -1,29 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, money } from "../lib/api";
-import { useMembershipPaymentIntent, useMyMembership } from "../lib/hooks";
-import { supabase, supabaseConfigured } from "../lib/supabase";
+import {
+  useMembershipPaymentIntent,
+  useMyMembership,
+  useProfile,
+  useSession,
+} from "../lib/hooks";
 import type { MembershipPlan } from "../types";
 import { PaymentForm } from "../components/PaymentForm";
 import { useDelayedClose } from "../lib/useDelayedClose";
 
 export function Membership() {
   const queryClient = useQueryClient();
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (!supabaseConfigured) {
-      setSignedIn(false);
-      return;
-    }
-    supabase?.auth
-      .getSession()
-      .then(({ data }) => setSignedIn(Boolean(data.session)));
-    const listener = supabase?.auth.onAuthStateChange((_event, session) =>
-      setSignedIn(Boolean(session)),
-    );
-    return () => listener?.data.subscription.unsubscribe();
-  }, []);
+  const session = useSession();
+  const signedIn = session === undefined ? null : Boolean(session);
+  const profile = useProfile(signedIn === true);
+  const isStudent = profile.data?.student.status === "verified";
 
   const plans = useQuery({
     queryKey: ["membership-plans"],
@@ -47,12 +41,6 @@ export function Membership() {
     queryClient.invalidateQueries({ queryKey: ["membership", "mine"] });
   };
 
-  const [confirmingCancel, setConfirmingCancel] = useState(false);
-  const cancelMembership = async () => {
-    await api.cancelMembership();
-    setConfirmingCancel(false);
-    queryClient.invalidateQueries({ queryKey: ["membership", "mine"] });
-  };
 
   return (
     <section className="section">
@@ -68,37 +56,15 @@ export function Membership() {
       {signedIn === true && mine.data && (
         <div className="notice membership-notice">
           <p>
-            You're on the <strong>{mine.data.plan}</strong> plan, active
-            since {new Date(mine.data.createdAt).toLocaleDateString()}.
+            You're on the <strong>{mine.data.plan}</strong> plan
+            {mine.data.status === "cancelled" && mine.data.renewsAt
+              ? `, cancelled — benefits continue until ${new Date(mine.data.renewsAt).toLocaleDateString("en-GB")}`
+              : `, active since ${new Date(mine.data.createdAt).toLocaleDateString("en-GB")}`}
+            .
           </p>
-          {confirmingCancel ? (
-            <p className="membership-confirm">
-              This ends your {mine.data.plan} membership immediately. Are you
-              sure?{" "}
-              <button
-                type="button"
-                className="text-button danger"
-                onClick={cancelMembership}
-              >
-                Yes, cancel
-              </button>
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => setConfirmingCancel(false)}
-              >
-                Never mind
-              </button>
-            </p>
-          ) : (
-            <button
-              type="button"
-              className="text-button danger"
-              onClick={() => setConfirmingCancel(true)}
-            >
-              Cancel membership
-            </button>
-          )}
+          <Link to="/account" search={{ tab: "membership" }}>
+            Manage or cancel membership
+          </Link>
         </div>
       )}
 
@@ -123,19 +89,35 @@ export function Membership() {
                     <li key={perk}>{perk}</li>
                   ))}
                 </ul>
-                <button
-                  className="button"
-                  disabled={!signedIn || isCurrent}
-                  onClick={() => setChosen(plan)}
-                >
-                  {!signedIn
-                    ? "Sign in to join"
-                    : isCurrent
-                      ? "Current plan"
-                      : mine.data
-                        ? `Switch to ${plan.name}`
-                        : `Choose ${plan.name}`}
-                </button>
+                {plan.requiresStudent && signedIn && !isStudent ? (
+                  <Link
+                    to="/account"
+                    search={{ tab: "verification" }}
+                    className="button secondary"
+                  >
+                    Verify student status to join
+                  </Link>
+                ) : (
+                  <button
+                    className="button"
+                    disabled={!signedIn || isCurrent}
+                    onClick={() => setChosen(plan)}
+                  >
+                    {!signedIn
+                      ? "Sign in to join"
+                      : isCurrent
+                        ? "Current plan"
+                        : mine.data
+                          ? `Switch to ${plan.name}`
+                          : `Choose ${plan.name}`}
+                  </button>
+                )}
+                {plan.requiresStudent && (
+                  <small className="muted">
+                    Verified students only. Not a member? Verified students
+                    still get 25% off every ticket.
+                  </small>
+                )}
               </article>
             );
           })}

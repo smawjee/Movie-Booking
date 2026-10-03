@@ -190,9 +190,24 @@ async function searchMovies(query) {
 
 async function getTrailers() {
   if (!TMDB_API_KEY) return [];
-  const nowPlayingUrl = `${BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=1&region=GB`;
-  const nowPlayingData = await fetchJson(nowPlayingUrl);
-  const movies = nowPlayingData.results.slice(0, 5);
+  const list = (kind) =>
+    fetchJson(
+      `${BASE_URL}/movie/${kind}?api_key=${TMDB_API_KEY}&language=en-US&page=1&region=GB`,
+    );
+  const [nowPlayingData, upcomingData] = await Promise.all([
+    list("now_playing"),
+    list("upcoming"),
+  ]);
+  const nowIds = new Set(nowPlayingData.results.map((m) => m.id));
+  const movies = [
+    ...nowPlayingData.results
+      .slice(0, 12)
+      .map((m) => ({ ...m, status: "now-showing" })),
+    ...upcomingData.results
+      .filter((m) => !nowIds.has(m.id))
+      .slice(0, 8)
+      .map((m) => ({ ...m, status: "coming-soon" })),
+  ];
 
   const trailers = await Promise.all(
     movies.map(async (movie) => {
@@ -212,6 +227,11 @@ async function getTrailers() {
           trailerKey: trailer.key,
           trailerUrl: `https://www.youtube.com/embed/${trailer.key}`,
           rating: rating,
+          status: movie.status,
+          overview: movie.overview,
+          posterPath: movie.poster_path,
+          backdropPath: movie.backdrop_path,
+          releaseDate: movie.release_date,
         };
       }
       return null;

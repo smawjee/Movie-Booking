@@ -1,6 +1,6 @@
 const { supabase } = require("./supabaseClient");
 const { stripe, stripeConfigured } = require("./stripeClient");
-const { experiences } = require("./cinemaStore");
+const { experiences, pricingMetadata } = require("./cinemaStore");
 
 const formats = Object.keys(experiences);
 const hash = (s) =>
@@ -79,7 +79,7 @@ async function buildScreenings(
         formatId,
         aud,
         startsAt,
-        time: `${String(hour).padStart(2, "0")}:${slot % 2 ? "30" : "00"}`,
+        time: `${String(hour).padStart(2, "0")}:00`,
       });
     });
   });
@@ -325,14 +325,39 @@ async function fetchBooking(column, value) {
   return mapBookingRow(data);
 }
 
-// Read-only mirror of the pricing logic inside the confirm_booking RPC, so a
-// PaymentIntent can be created for the correct amount before that RPC runs.
-// The RPC itself still recomputes the total in SQL at confirm time and never
-// trusts anything passed in from the client.
-async function getReservationTotal(reservationId) {
+// Bookings made while signed in, plus earlier guest bookings made with the
+// account's (Supabase-verified) email address.
+async function listBookingsForUser(userId, email) {
+  const query = (column, value) =>
+    supabase
+      .from("bookings")
+      .select(`created_at, ${BOOKING_SELECT}`)
+      .eq(column, value)
+      .order("created_at", { ascending: false })
+      .limit(50);
+  const results = await Promise.all([
+    query("user_id", userId),
+    ...(email ? [query("guest_email", email)] : []),
+  ]);
+  const rows = new Map();
+  for (const { data, error } of results) {
+    if (error) throw error;
+    for (const row of data) rows.set(row.id, row);
+  }
+  return [...rows.values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map((row) => ({ ...mapBookingRow(row), createdAt: row.created_at }));
+}
+
+// Seats and screening facts the pricing rules need, read straight from the
+// DB. Seat prices mirror the confirm_booking RPC, which recomputes the total
+// in SQL at confirm time and never trusts client-supplied amounts.
+async function getReservationQuote(reservationId) {
   const { data: rows, error } = await supabase
     .from("seat_reservations")
-    .select("seat_id, seats ( tier ), screenings ( base_price_pence )")
+    .select(
+      "seats ( tier ), screenings ( base_price_pence, starts_at, auditoriums ( experience_id ), movies ( rating ) )",
+    )
     .eq("draft_id", reservationId)
     .eq("status", "held");
   if (error) throw error;
@@ -340,49 +365,58 @@ async function getReservationTotal(reservationId) {
     throw Object.assign(new Error("Reservation has expired"), {
       status: 409,
     });
-  const basePrice = rows[0].screenings.base_price_pence;
-  const totalPence = rows.reduce(
-    (sum, r) => sum + basePrice + (r.seats.tier === "premium" ? 250 : 0),
-    0,
-  );
-  return { totalPence };
+  const screening = rows[0].screenings;
+  return {
+    seats: rows.map((r) => ({
+      tier: r.seats.tier,
+      pricePence:
+        screening.base_price_pence + (r.seats.tier === "premium" ? 250 : 0),
+    })),
+    date: new Date(screening.starts_at).toISOString().slice(0, 10),
+    experienceId: screening.auditoriums?.experience_id || "standard",
+    rating: screening.movies?.rating || "NR",
+  };
 }
 
-async function createPaymentIntent(reservationId, email, discount) {
-  const { totalPence } = await getReservationTotal(reservationId);
+async function createPaymentIntent(reservationId, email, pricing, account = {}) {
   if (!stripeConfigured)
     throw Object.assign(new Error("Payments are not configured"), {
       status: 500,
     });
-  const amountPence = discount
-    ? Math.round((totalPence * (100 - discount.discountPercent)) / 100)
-    : totalPence;
   const intent = await stripe.paymentIntents.create({
-    amount: amountPence,
+    amount: pricing.amountPence,
     currency: "gbp",
     payment_method_types: ["card"],
-    metadata: {
-      reservationId,
-      email,
-      kind: "booking",
-      promoCode: discount?.code || "",
-      discountPercent: String(discount?.discountPercent || 0),
-    },
+    ...(account.customerId && {
+      customer: account.customerId,
+      setup_future_usage: "off_session",
+    }),
+    metadata: pricingMetadata(reservationId, email, pricing, account),
   });
   return {
     clientSecret: intent.client_secret,
-    amountPence,
-    discountPence: totalPence - amountPence,
+    amountPence: pricing.amountPence,
+    discountPence: pricing.savingsPence,
   };
 }
 
-async function confirm({ reservationId, email, payment, discountPercent, promoCode }) {
+async function confirm({
+  reservationId,
+  email,
+  payment,
+  discountPercent,
+  discountPence,
+  promoCode,
+  userId,
+}) {
   const { data: bookingId, error } = await supabase.rpc("confirm_booking", {
     p_draft_id: reservationId,
     p_email: email,
     p_payment: payment,
     p_discount_percent: discountPercent || 0,
     p_promo_code: promoCode || null,
+    p_user_id: userId || null,
+    p_discount_pence: discountPence || 0,
   });
   if (error) {
     if (/RESERVATION_EXPIRED/.test(error.message))
@@ -426,9 +460,11 @@ module.exports = {
   getScreening,
   getSeats,
   reserve,
+  getReservationQuote,
   createPaymentIntent,
   confirm,
   getBooking,
+  listBookingsForUser,
   updateDeliveryStatus,
   publicBooking,
 };

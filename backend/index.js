@@ -15,6 +15,7 @@ app.use("/api/movies", movieRoutes);
 app.use("/api", require("./routes/cinema"));
 app.use("/api", require("./routes/tickets"));
 app.use("/api", require("./routes/assistant"));
+app.use("/api", require("./routes/account"));
 
 const reactDist = path.join(__dirname, "..", "frontend-dist");
 const legacyFrontend = path.join(__dirname, "..", "frontend");

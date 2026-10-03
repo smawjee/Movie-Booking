@@ -1,109 +1,80 @@
-import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { supabase, supabaseConfigured } from "../lib/supabase";
-import { useMyMembership } from "../lib/hooks";
+import { ageFrom, latestDob, MIN_ACCOUNT_AGE, passwordStrength } from "../lib/age";
+
+/** Signed-out view: sign in, or create an account with an age check. */
 export function AccountPanel() {
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
-    [sessionEmail, setSessionEmail] = useState<string | null>(null),
+    [fullName, setFullName] = useState(""),
+    [dob, setDob] = useState(""),
+    [terms, setTerms] = useState(false),
     [mode, setMode] = useState<"signin" | "signup">("signin"),
+    [busy, setBusy] = useState(false),
     [status, setStatus] = useState<{ text: string; error: boolean } | null>(
       null,
     );
-  useEffect(() => {
-    supabase?.auth
-      .getSession()
-      .then(({ data }) => setSessionEmail(data.session?.user.email || null));
-    const listener = supabase?.auth.onAuthStateChange((_event, session) =>
-      setSessionEmail(session?.user.email || null),
-    );
-    return () => listener?.data.subscription.unsubscribe();
-  }, []);
-  const membership = useMyMembership(Boolean(sessionEmail));
   if (!supabaseConfigured)
     return (
       <div className="supabase-setup card">
         <span className="eyebrow">Developer setup</span>
-        <h2>Connect Supabase in four steps</h2>
+        <h2>Connect Supabase to enable accounts</h2>
         <p>
-          Guest booking works now. Connect a project to enable real accounts,
-          persistent bookings, memberships and realtime seat updates.
-        </p>
-        <ol>
-          <li>
-            Create a project at <strong>supabase.com</strong>.
-          </li>
-          <li>
-            Run <code>supabase/migrations/20260910_initial_cinego.sql</code> in
-            the SQL editor.
-          </li>
-          <li>
-            Copy <code>.env.example</code> to <code>.env</code> and add the
-            project URL and keys.
-          </li>
-          <li>
-            Restart Express and Vite after changing environment variables.
-          </li>
-        </ol>
-        <div className="env-example">
-          <code>
-            VITE_SUPABASE_URL=https://your-project.supabase.co
-            <br />
-            VITE_SUPABASE_ANON_KEY=your-anon-key
-          </code>
-        </div>
-        <p className="notice">
-          Keep <strong>SUPABASE_SERVICE_ROLE_KEY</strong> on the Express server
-          only. Never prefix it with VITE_.
+          Guest booking works now. Add <code>VITE_SUPABASE_URL</code> and{" "}
+          <code>VITE_SUPABASE_ANON_KEY</code> to <code>.env</code> and restart
+          to enable accounts, memberships and saved tickets.
         </p>
       </div>
     );
-  if (sessionEmail)
-    return (
-      <article className="card account-panel">
-        <span className="eyebrow">Signed in</span>
-        <h2>{sessionEmail}</h2>
-        <p>
-          Your bookings and membership can be protected by Supabase Row Level
-          Security.
-        </p>
-        {membership.data ? (
-          <p className="membership-status">
-            <span className="plan-tag">
-              {membership.data.plan.replace(/-/g, " ")}
-            </span>
-            member since{" "}
-            {new Date(membership.data.createdAt).toLocaleDateString()}
-            {" · "}
-            <Link to="/membership">Manage membership</Link>
-          </p>
-        ) : (
-          !membership.isLoading && (
-            <p className="membership-status">
-              No active membership ·{" "}
-              <Link to="/membership">See Cinego+ plans</Link>
-            </p>
-          )
-        )}
-        <button
-          className="button secondary"
-          onClick={() => supabase?.auth.signOut()}
-        >
-          Sign out
-        </button>
-      </article>
-    );
+  const strength = passwordStrength(password);
+  const age = ageFrom(dob);
+  const signup = mode === "signup";
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus(null);
-    const result =
-      mode === "signin"
-        ? await supabase!.auth.signInWithPassword({ email, password })
-        : await supabase!.auth.signUp({ email, password });
+    if (signup) {
+      if (!fullName.trim())
+        return setStatus({ text: "Enter your full name.", error: true });
+      if (age === null)
+        return setStatus({ text: "Enter a valid date of birth.", error: true });
+      if (age < MIN_ACCOUNT_AGE)
+        return setStatus({
+          text: `You must be ${MIN_ACCOUNT_AGE} or older to create a Cinego account. Under-${MIN_ACCOUNT_AGE}s can still visit with an adult who books for them.`,
+          error: true,
+        });
+      if (!strength.acceptable)
+        return setStatus({
+          text: "Choose a stronger password (8+ characters with at least three of: upper/lower case, a number, a symbol).",
+          error: true,
+        });
+      if (!terms)
+        return setStatus({
+          text: "Accept the terms and privacy policy to continue.",
+          error: true,
+        });
+    }
+    setBusy(true);
+    const result = signup
+      ? await supabase!.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            // Copied into the profile on first sign-in (see Account page).
+            data: { full_name: fullName.trim(), date_of_birth: dob },
+          },
+        })
+      : await supabase!.auth.signInWithPassword({ email, password });
+    setBusy(false);
     setStatus(
       result.error
         ? { text: result.error.message, error: true }
-        : { text: "Check your email to continue.", error: false },
+        : signup && !result.data.session
+          ? {
+              text: "Check your inbox to confirm your email, then sign in.",
+              error: false,
+            }
+          : null,
     );
   };
   const googleSignIn = async () => {
@@ -126,38 +97,95 @@ export function AccountPanel() {
     );
   };
   return (
-    <form className="card account-panel" onSubmit={submit}>
-      <span className="eyebrow">Supabase Auth</span>
-      <h2>{mode === "signin" ? "Sign in" : "Create account"}</h2>
+    <form className="card account-panel" onSubmit={submit} noValidate>
+      <span className="eyebrow">Your Cinego account</span>
+      <h2>{signup ? "Create account" : "Sign in"}</h2>
+      {signup && (
+        <label>
+          Full name
+          <input
+            autoComplete="name"
+            required
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+        </label>
+      )}
       <label>
         Email
         <input
           type="email"
+          autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
       </label>
+      {signup && (
+        <label>
+          Date of birth
+          <input
+            type="date"
+            autoComplete="bday"
+            required
+            max={latestDob(0)}
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+          />
+          <small className="field-hint">
+            Used to check age ratings when you book. You must be{" "}
+            {MIN_ACCOUNT_AGE}+ to register; you can verify your ID later for
+            15 and 18 films.
+          </small>
+        </label>
+      )}
       <label>
         Password
         <input
           type="password"
+          autoComplete={signup ? "new-password" : "current-password"}
           minLength={8}
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
+      {signup && password && (
+        <div className="password-meter" aria-live="polite">
+          <div className="meter" data-score={strength.score}>
+            <span style={{ width: `${(strength.score / 4) * 100}%` }} />
+          </div>
+          <small>{strength.label}</small>
+          <ul>
+            {strength.checks.map((c) => (
+              <li key={c.label} className={c.ok ? "ok" : undefined}>
+                {c.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {signup && (
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={terms}
+            onChange={(e) => setTerms(e.target.checked)}
+          />{" "}
+          I accept the terms of use and privacy policy, and confirm the
+          details above are true.
+        </label>
+      )}
       {status && (
         <p
           className={status.error ? "error" : "auth-message"}
-          role={status.error ? "alert" : undefined}
+          role={status.error ? "alert" : "status"}
         >
           {status.text}
         </p>
       )}
-      <button className="button">
-        {mode === "signin" ? "Sign in" : "Create account"}
+      <button className="button" disabled={busy}>
+        {busy ? "Please wait…" : signup ? "Create account" : "Sign in"}
       </button>
       <div className="auth-divider">
         <span>or</span>
@@ -169,7 +197,7 @@ export function AccountPanel() {
       >
         <strong>G</strong> Continue with Google
       </button>
-      {mode === "signin" && (
+      {!signup && (
         <button type="button" className="text-button" onClick={resetPassword}>
           Forgot password?
         </button>
@@ -177,9 +205,12 @@ export function AccountPanel() {
       <button
         type="button"
         className="button secondary"
-        onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+        onClick={() => {
+          setMode(signup ? "signin" : "signup");
+          setStatus(null);
+        }}
       >
-        {mode === "signin" ? "Create an account" : "I already have an account"}
+        {signup ? "I already have an account" : "Create an account"}
       </button>
     </form>
   );
