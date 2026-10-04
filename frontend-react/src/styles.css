@@ -1185,8 +1185,19 @@ main {
   align-items: start;
   margin: 1rem 0;
 }
+.check {
+  gap: 0.6rem;
+}
+/* Inputs get a 44px touch height elsewhere; a checkbox stretched that tall
+   draws its box at the bottom, below the first line of its label. */
 .check input {
-  width: auto;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  accent-color: var(--accent);
 }
 .error {
   color: var(--danger) !important;

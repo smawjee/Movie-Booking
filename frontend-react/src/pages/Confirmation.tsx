@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import { api, money } from "../lib/api";
+import { api, money, showDate } from "../lib/api";
 import { confirmationRoute } from "../routes";
 import { TicketActions } from "../components/TicketActions";
 
@@ -30,7 +30,7 @@ export function Confirmation() {
           </span>
           <h1>{booking.data.screening.movieTitle}</h1>
           <p>
-            {booking.data.screening.date} · {booking.data.screening.time} ·{" "}
+            {showDate(booking.data.screening.date)} · {booking.data.screening.time} ·{" "}
             {booking.data.screening.experience.name}
           </p>
           <p>

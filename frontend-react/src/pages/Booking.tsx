@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { BadgeCheck } from "lucide-react";
-import { ApiError, api, money } from "../lib/api";
+import { ApiError, api, money, showDate } from "../lib/api";
 import {
   useProfile,
   useReservationPaymentIntent,
@@ -112,7 +112,7 @@ export function Booking() {
           <div className="booking-facts">
             <span>
               <small>Date</small>
-              <strong>{detail.data.date}</strong>
+              <strong>{showDate(detail.data.date)}</strong>
             </span>
             <span>
               <small>Time</small>

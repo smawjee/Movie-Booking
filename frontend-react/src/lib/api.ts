@@ -194,6 +194,20 @@ export const api = {
   activeOffers: () => json<Offer[]>("/api/offers/active"),
 };
 export const emailSchema = z.string().email();
+/** "2026-10-04" -> "Sun 4 Oct 2026". Screening dates are calendar dates, so
+ *  format them in UTC to avoid shifting a day in other timezones. */
+export const showDate = (iso: string) => {
+  const date = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(date.valueOf())
+    ? iso
+    : date.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+};
 export const money = (pence: number) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
     pence / 100,

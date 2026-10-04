@@ -4,6 +4,7 @@ const rateLimit = require("express-rate-limit").rateLimit;
 const OpenAI = require("openai").default;
 const { getNowPlaying } = require("../../services/tmdbService");
 const store = require("../../services/store");
+const { addDays, ukNow, upcomingOnly } = require("../../services/showtimes");
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 60_000, limit: 15 });
 const sensitive =
@@ -34,16 +35,40 @@ async function context(message) {
     : /london/i.test(message)
       ? "london"
       : "edinburgh";
-  const tomorrow = /tomorrow/i.test(message);
-  const d = new Date();
-  if (tomorrow) d.setDate(d.getDate() + 1);
-  const date = d.toISOString().slice(0, 10);
+  const today = ukNow().date;
+  const date = /tomorrow/i.test(message) ? addDays(today, 1) : today;
   const format = ["4dx", "imax", "dolby", "screenx", "3d"].find((x) =>
     message.toLowerCase().includes(x),
   );
-  const all = await store.buildScreenings(movies, { cinema: city, date, format });
+  const all = upcomingOnly(
+    await store.buildScreenings(movies, { cinema: city, date, format }),
+  );
   return { movies, screenings: all.slice(0, 40), city, date };
 }
+// TMDB genre ids for the words people use when asking for a film.
+const genreIds = {
+  horror: 27,
+  scary: 27,
+  comed: 35,
+  funny: 35,
+  action: 28,
+  adventure: 12,
+  animat: 16,
+  drama: 18,
+  thriller: 53,
+  romanc: 10749,
+  "sci-fi": 878,
+  science: 878,
+  family: 10751,
+  fantasy: 14,
+  crime: 80,
+};
+const timesOfDay = {
+  tonight: ["17:00", "23:59"],
+  evening: ["17:00", "23:59"],
+  afternoon: ["12:00", "16:59"],
+  morning: ["00:00", "11:59"],
+};
 function fallback(message, data) {
   const rating = Object.keys(ratingInfo).find((r) =>
     new RegExp(`\\b${r}\\b`, "i").test(message),
@@ -51,8 +76,30 @@ function fallback(message, data) {
   if (rating && /age|id|rating/i.test(message))
     return { message: ratingInfo[rating] };
   const family = /family|children|kids/i.test(message);
-  const list = data.screenings
-    .filter((s) => !family || ["U", "PG", "12A"].includes(s.rating))
+  const genre = Object.entries(genreIds).find(([word]) =>
+    new RegExp(`\\b${word}`, "i").test(message),
+  )?.[1];
+  const genresById = new Map(
+    (data.movies || []).map((movie) => [movie.id, movie.genre_ids || []]),
+  );
+  const [from, to] =
+    Object.entries(timesOfDay).find(([word]) =>
+      new RegExp(`\\b${word}`, "i").test(message),
+    )?.[1] || ["00:00", "23:59"];
+  const matches = data.screenings.filter(
+    (s) =>
+      (!family || ["U", "PG", "12A"].includes(s.rating)) &&
+      (!genre || genresById.get(s.movieId)?.includes(genre)) &&
+      s.time >= from &&
+      s.time <= to,
+  );
+  // One showing per film first, so four suggestions are four different films.
+  const seen = new Set();
+  const list = [
+    ...matches.filter((s) => !seen.has(s.movieId) && seen.add(s.movieId)),
+    ...matches,
+  ]
+    .filter((s, i, all) => all.indexOf(s) === i)
     .slice(0, 4);
   if (!list.length)
     return {
