@@ -46,9 +46,12 @@ function StripeCheckoutForm({
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  // The card form loads inside Stripe's iframe a few seconds after the modal
+  // opens; paying before it is ready used to hang on "Processing payment…".
+  const [ready, setReady] = useState(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !ready) return;
     setProcessing(true);
     setError("");
     const { error: confirmError, paymentIntent } = await stripe.confirmPayment(
@@ -77,16 +80,31 @@ function StripeCheckoutForm({
   };
   return (
     <form className="form-grid" onSubmit={submit}>
-      <PaymentElement />
+      <PaymentElement
+        onReady={() => setReady(true)}
+        onChange={() => error && !processing && setError("")}
+        onLoadError={() =>
+          setError(
+            "The secure card form could not load. Check your connection and reopen checkout.",
+          )
+        }
+      />
+      {!ready && !error && (
+        <p className="notice" role="status">
+          Loading secure card form…
+        </p>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}
         </p>
       )}
-      <button className="button" disabled={processing || !stripe}>
+      <button className="button" disabled={processing || !stripe || !ready}>
         {processing
           ? "Processing payment…"
-          : `${label} · ${money(amountPence)}`}
+          : !ready
+            ? "Loading card form…"
+            : `${label} · ${money(amountPence)}`}
       </button>
     </form>
   );

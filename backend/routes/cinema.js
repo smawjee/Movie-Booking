@@ -13,6 +13,13 @@ const {
   customerSessionSecret,
 } = require("../../services/stripeCustomers");
 const { confirmFromIntent } = require("../../services/bookingConfirmation");
+const {
+  addDays,
+  bookableDate,
+  hasStarted,
+  ukNow,
+  upcomingOnly,
+} = require("../../services/showtimes");
 const router = express.Router();
 const bookingLookupLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -28,15 +35,21 @@ const age = z.object({
   confirmedAt: z.string().optional(),
 });
 router.get("/screenings", async (req, res) => {
+  // Past or far-future dates would also create screening rows, so they are
+  // rejected rather than built.
+  const date = bookableDate(req.query.date);
+  if (!date)
+    return res
+      .status(400)
+      .json({ error: "Choose a date between today and the next 60 days" });
   try {
     const movies = await getNowPlaying();
-    res.json(
-      await store.buildScreenings(movies, {
-        cinema: String(req.query.cinema || "edinburgh"),
-        date: String(req.query.date || new Date().toISOString().slice(0, 10)),
-        format: req.query.format ? String(req.query.format) : undefined,
-      }),
-    );
+    const screenings = await store.buildScreenings(movies, {
+      cinema: String(req.query.cinema || "edinburgh"),
+      date,
+      format: req.query.format ? String(req.query.format) : undefined,
+    });
+    res.json(upcomingOnly(screenings));
   } catch (e) {
     res.status(502).json({ error: "Could not load screenings" });
   }
@@ -48,16 +61,18 @@ router.get("/screenings", async (req, res) => {
 // screening id works through the existing seat/payment/confirm flow untouched.
 router.get("/screenings/upcoming", async (req, res) => {
   try {
+    const date = bookableDate(req.query.date || addDays(ukNow().date, 7));
+    if (!date)
+      return res
+        .status(400)
+        .json({ error: "Choose a date between today and the next 60 days" });
     const movies = await getUpcoming();
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 7);
-    res.json(
-      await store.buildScreenings(movies, {
-        cinema: String(req.query.cinema || "edinburgh"),
-        date: String(req.query.date || defaultDate.toISOString().slice(0, 10)),
-        format: req.query.format ? String(req.query.format) : undefined,
-      }),
-    );
+    const screenings = await store.buildScreenings(movies, {
+      cinema: String(req.query.cinema || "edinburgh"),
+      date,
+      format: req.query.format ? String(req.query.format) : undefined,
+    });
+    res.json(upcomingOnly(screenings));
   } catch (e) {
     res.status(502).json({ error: "Could not load advance screenings" });
   }
@@ -110,6 +125,14 @@ router.post("/reservations", async (req, res) => {
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid reservation request" });
   try {
+    const screening = await store.getScreening(parsed.data.screeningId);
+    if (!screening)
+      return res.status(404).json({ error: "Screening not found" });
+    if (hasStarted(screening))
+      return res.status(409).json({
+        error: "This screening has already started. Please choose a later showtime.",
+        code: "SCREENING_STARTED",
+      });
     const user = await getAuthedUser(req);
     const ageConfirmation = await accountAgeConfirmation(
       user,

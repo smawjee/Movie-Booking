@@ -53,6 +53,12 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Unknown API paths answer in JSON like every other API error, rather than
+// Express's default HTML page.
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
 // Static file serving + SPA fallback are only needed when this app runs as
 // a standalone Node server (local dev, or any non-Vercel host). On Vercel the
 // built frontend is served directly from its CDN per vercel.json, and this

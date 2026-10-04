@@ -75,11 +75,71 @@ const prettyDate = (iso) => {
       });
 };
 
+// Brand marks from /cinego-logo.svg, drawn as vectors so the PDF needs no
+// image assets.
+const LOGO_TICKET =
+  "M5 5h34a5 5 0 0 1 5 5v7a7 7 0 0 0 0 14v7a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5v-7a7 7 0 0 0 0-14v-7a5 5 0 0 1 5-5Z";
+const LOGO_PLAY = "M18 15 L32 24 L18 33 Z";
+const GOLD = "#f5bd27";
+const INK = "#111114";
+const MUTED = "#6e6e73";
+const HAIRLINE = "#e5e5ea";
+const PAGE = "#f2f2f4";
+const ratingColours = {
+  U: ["#00a650", "#ffffff"],
+  PG: ["#fbb800", INK],
+  "12A": ["#f37021", "#ffffff"],
+  12: ["#f37021", "#ffffff"],
+  15: ["#e5007d", "#ffffff"],
+  18: ["#dc0a0a", "#ffffff"],
+};
+
+function drawLogo(doc, x, y, height) {
+  const scale = height / 48;
+  doc.save().translate(x, y).scale(scale);
+  doc.path(LOGO_TICKET).fill(GOLD);
+  doc.path(LOGO_PLAY).fill(INK);
+  doc.restore();
+  doc.font("Helvetica-Bold").fontSize(height * 0.62);
+  doc.fillColor("#ffffff").text("CINE", x + 56 * scale, y + height * 0.2, {
+    continued: true,
+    characterSpacing: 0.5,
+    lineBreak: false,
+  });
+  doc.fillColor(GOLD).text("GO", { characterSpacing: 0.5, lineBreak: false });
+}
+
+// Best effort: a missing or slow poster just leaves the layout without it.
+const posterCache = new Map();
+async function posterImage(posterPath) {
+  if (!posterPath) return null;
+  if (posterCache.has(posterPath)) return posterCache.get(posterPath);
+  try {
+    const response = await fetch(
+      `https://image.tmdb.org/t/p/w342${posterPath}`,
+      { signal: AbortSignal.timeout(4000) },
+    );
+    if (!response.ok) return null;
+    const image = Buffer.from(await response.arrayBuffer());
+    posterCache.set(posterPath, image);
+    return image;
+  } catch {
+    return null;
+  }
+}
+
 // One A4 page per seat: each guest can be scanned in separately, and the
 // shared booking QR on every page still resolves the whole booking.
 async function pdf(booking) {
   const { screening, seats = [] } = booking;
-  const qr = await QRCode.toBuffer(token(booking), { width: 440, margin: 2 });
+  const [qr, poster] = await Promise.all([
+    QRCode.toBuffer(token(booking), {
+      width: 520,
+      margin: 1,
+      color: { dark: INK, light: "#ffffff" },
+    }),
+    posterImage(screening.posterPath),
+  ]);
   const doc = new PDFDocument({
     size: "A4",
     margin: 0,
@@ -96,108 +156,198 @@ async function pdf(booking) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
   });
+
   const W = 595.28;
-  const M = 48;
-  const inner = W - M * 2;
+  const H = 841.89;
+  const cardX = 36;
+  const cardY = 36;
+  const cardW = W - cardX * 2;
+  const cardH = H - cardY * 2;
+  const pad = 32;
+  const left = cardX + pad;
+  const inner = cardW - pad * 2;
+  const headerH = 96;
+  const cinemaName =
+    cinemaNames[screening.cinema] || `Cinego ${screening.cinema}`;
+  const rating = String(screening.rating || "NR");
   const pages = seats.length ? seats : [null];
+
   pages.forEach((seat, index) => {
     doc.addPage();
-    // Header band
-    doc.rect(0, 0, W, 132).fill("#0b0b0d");
-    doc.font("Helvetica-Bold").fontSize(22).fillColor("#f5c948");
-    doc.text("CINEGO", M, 44, { characterSpacing: 3 });
-    doc.font("Helvetica").fontSize(9).fillColor("#a1a1a6");
-    doc.text("ADMIT ONE  ·  DIGITAL CINEMA TICKET", M, 76, {
-      characterSpacing: 1,
+    doc.rect(0, 0, W, H).fill(PAGE);
+
+    // Ticket card with a dark header clipped to its rounded top
+    doc.roundedRect(cardX, cardY, cardW, cardH, 20).fill("#ffffff");
+    doc.save();
+    doc.roundedRect(cardX, cardY, cardW, cardH, 20).clip();
+    doc.rect(cardX, cardY, cardW, headerH).fill("#0b0b0d");
+    doc.rect(cardX, cardY + headerH, cardW, 3).fill(GOLD);
+    doc.restore();
+    drawLogo(doc, left, cardY + 30, 36);
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#a1a1a6");
+    doc.text("E-TICKET  ·  ADMIT ONE", left, cardY + 36, {
+      width: inner,
+      align: "right",
+      characterSpacing: 1.5,
     });
+    doc.font("Helvetica").fontSize(9).fillColor("#8e8e93");
     doc.text(
-      pages.length > 1 ? `TICKET ${index + 1} OF ${pages.length}` : "",
-      M,
-      76,
-      { width: inner, align: "right", characterSpacing: 1 },
+      pages.length > 1
+        ? `Ticket ${index + 1} of ${pages.length}`
+        : booking.reference,
+      left,
+      cardY + 52,
+      { width: inner, align: "right", characterSpacing: 0.5 },
     );
 
-    // Film title, wraps within the content width
-    doc.font("Helvetica-Bold").fontSize(26).fillColor("#111111");
-    doc.text(screening.movieTitle, M, 166, { width: inner, lineGap: 2 });
-    const badgeY = doc.y + 10;
-    doc.roundedRect(M, badgeY, 44, 22, 4).fill("#111111");
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("#ffffff");
-    doc.text(screening.rating || "NR", M, badgeY + 6, {
-      width: 44,
+    // Film: poster beside title, rating and format
+    const heroY = cardY + headerH + 34;
+    const posterW = 112;
+    const posterH = 168;
+    let textX = left;
+    if (poster) {
+      doc.save();
+      doc.roundedRect(left, heroY, posterW, posterH, 10).clip();
+      try {
+        doc.image(poster, left, heroY, { width: posterW, height: posterH });
+      } catch {
+        doc.rect(left, heroY, posterW, posterH).fill(HAIRLINE);
+      }
+      doc.restore();
+      textX = left + posterW + 24;
+    }
+    const textW = cardX + cardW - pad - textX;
+    doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED);
+    doc.text(cinemaName.toUpperCase(), textX, heroY + 4, {
+      width: textW,
+      characterSpacing: 1.5,
+    });
+    // Shrink long titles so the hero never grows past the poster's height.
+    doc.font("Helvetica-Bold");
+    const titleSize =
+      [30, 26, 22, 19].find(
+        (size) =>
+          doc.fontSize(size).heightOfString(screening.movieTitle, {
+            width: textW,
+          }) <= 84,
+      ) || 17;
+    doc.fontSize(titleSize).fillColor(INK);
+    doc.text(screening.movieTitle, textX, heroY + 22, { width: textW });
+    const badgeY = doc.y + 12;
+    const [badgeFill, badgeText] = ratingColours[rating] || [INK, "#ffffff"];
+    doc.circle(textX + 14, badgeY + 14, 14).fill(badgeFill);
+    doc.font("Helvetica-Bold").fontSize(rating.length > 2 ? 9 : 11);
+    doc.fillColor(badgeText);
+    doc.text(rating, textX, badgeY + (rating.length > 2 ? 10 : 9.5), {
+      width: 28,
       align: "center",
     });
-    doc.font("Helvetica").fontSize(10).fillColor("#555555");
-    doc.text(screening.experience?.name || "Standard", M + 56, badgeY + 6);
+    const meta = [
+      screening.experience?.name || "Standard",
+      screening.runtime ? `${screening.runtime} min` : null,
+    ]
+      .filter(Boolean)
+      .join("  ·  ");
+    doc.font("Helvetica").fontSize(11).fillColor(MUTED);
+    doc.text(meta, textX + 38, badgeY + 9, { width: textW - 38 });
 
-    // Detail grid
-    const gridTop = badgeY + 48;
-    const cell = (label, value, x, y, width) => {
-      doc.font("Helvetica").fontSize(8).fillColor("#888888");
-      doc.text(label.toUpperCase(), x, y, { width, characterSpacing: 1 });
-      doc.font("Helvetica-Bold").fontSize(14).fillColor("#111111");
-      doc.text(value, x, y + 14, { width });
+    // Details grid
+    const gridY = Math.max(poster ? heroY + posterH : 0, doc.y) + 26;
+    const gridH = 128;
+    doc.roundedRect(left, gridY, inner, gridH, 14).fill("#f5f5f7");
+    const colW = inner / 3;
+    const cell = (label, value, col, row) => {
+      const x = left + 20 + col * colW;
+      const y = gridY + 22 + row * 52;
+      doc.font("Helvetica-Bold").fontSize(8).fillColor(MUTED);
+      doc.text(label.toUpperCase(), x, y, {
+        width: colW - 24,
+        characterSpacing: 1.2,
+      });
+      doc.font("Helvetica-Bold").fontSize(14).fillColor(INK);
+      doc.text(value, x, y + 13, {
+        width: colW - 24,
+        lineBreak: false,
+        ellipsis: true,
+      });
     };
-    const col = inner / 2;
-    cell("Date", prettyDate(screening.date), M, gridTop, col - 12);
-    cell("Time", screening.time, M + col, gridTop, col);
-    cell(
-      "Cinema",
-      cinemaNames[screening.cinema] || `Cinego ${screening.cinema}`,
-      M,
-      gridTop + 56,
-      col - 12,
-    );
-    cell("Screen", String(screening.screen), M + col, gridTop + 56, col);
+    cell("Date", prettyDate(screening.date).replace(/ \d{4}$/, ""), 0, 0);
+    cell("Time", screening.time, 1, 0);
+    cell("Screen", String(screening.screen), 2, 0);
+    cell("Cinema", cinemaName.replace(/^Cinego /, ""), 0, 1);
     cell(
       seat ? "Seat" : "Seats",
       seat
-        ? `${seat.row}${seat.number}${seat.tier === "premium" ? "  (Premium)" : ""}`
+        ? `${seat.row}${seat.number}${seat.tier === "premium" ? " · Premium" : ""}`
         : "See booking",
-      M,
-      gridTop + 112,
-      col - 12,
+      1,
+      1,
     );
-    cell("Booking reference", booking.reference, M + col, gridTop + 112, col);
+    cell("Booking ref", booking.reference, 2, 1);
 
-    // Perforation + QR panel
-    const stubTop = gridTop + 190;
+    // Tear line with notches cut into the card edges
+    const tearY = gridY + gridH + 32;
+    doc.circle(cardX, tearY, 14).fill(PAGE);
+    doc.circle(cardX + cardW, tearY, 14).fill(PAGE);
     doc
-      .moveTo(M, stubTop)
-      .lineTo(W - M, stubTop)
-      .dash(4, { space: 4 })
-      .strokeColor("#cccccc")
+      .moveTo(cardX + 22, tearY)
+      .lineTo(cardX + cardW - 22, tearY)
+      .dash(5, { space: 5 })
+      .lineWidth(1)
+      .strokeColor("#d2d2d7")
       .stroke()
       .undash();
-    const qrSize = 170;
-    doc.roundedRect(M, stubTop + 28, qrSize + 24, qrSize + 24, 10).fill("#f4f4f5");
-    doc.image(qr, M + 12, stubTop + 40, { width: qrSize });
-    const textX = M + qrSize + 48;
-    const textW = W - M - textX;
-    doc.font("Helvetica-Bold").fontSize(13).fillColor("#111111");
-    doc.text("Scan at the auditorium entrance", textX, stubTop + 40, {
-      width: textW,
+
+    // Stub: QR and entry instructions
+    const stubY = tearY + 32;
+    const qrSize = 168;
+    doc
+      .roundedRect(left, stubY, qrSize + 24, qrSize + 24, 14)
+      .lineWidth(1)
+      .strokeColor(HAIRLINE)
+      .stroke();
+    doc.image(qr, left + 12, stubY + 12, { width: qrSize });
+
+    const infoX = left + qrSize + 24 + 28;
+    const infoW = cardX + cardW - pad - infoX;
+    doc.font("Helvetica-Bold").fontSize(16).fillColor(INK);
+    doc.text("Scan at the entrance", infoX, stubY + 4, { width: infoW });
+    doc.font("Helvetica").fontSize(10.5);
+    const notes = [
+      "Doors open 20 minutes before the film. Please arrive at least 15 minutes early.",
+      ["15", "18"].includes(rating)
+        ? `Rated ${rating}: every guest must be ${rating} or over. Photo ID may be checked.`
+        : rating === "12A"
+          ? "Rated 12A: under-12s must be accompanied by an adult."
+          : null,
+      "Show this page on your phone or printed. Each guest needs their own ticket page.",
+    ].filter(Boolean);
+    let noteY = stubY + 34;
+    notes.forEach((note) => {
+      doc.circle(infoX + 3, noteY + 6, 2.2).fill(GOLD);
+      doc.fillColor("#3a3a3c").text(note, infoX + 14, noteY, {
+        width: infoW - 14,
+        lineGap: 2,
+      });
+      noteY = doc.y + 9;
     });
-    doc.font("Helvetica").fontSize(10).fillColor("#555555");
-    doc.text(
-      `Doors open 20 minutes before the film. Please arrive at least 15 minutes early.\n\n` +
-        (["15", "18"].includes(screening.rating)
-          ? `This film is rated ${screening.rating}. Every guest must be ${screening.rating} or over; photo ID will be checked.\n\n`
-          : screening.rating === "12A"
-            ? "Under-12s must be accompanied by an adult.\n\n"
-            : "") +
-        `Total paid for this booking: £${(booking.totalPence / 100).toFixed(2)}`,
-      textX,
-      stubTop + 64,
-      { width: textW, lineGap: 2 },
-    );
+    doc
+      .moveTo(infoX, noteY + 4)
+      .lineTo(infoX + infoW, noteY + 4)
+      .lineWidth(1)
+      .strokeColor(HAIRLINE)
+      .stroke();
+    doc.font("Helvetica-Bold").fontSize(8).fillColor(MUTED);
+    doc.text("TOTAL PAID", infoX, noteY + 18, { characterSpacing: 1.2 });
+    doc.font("Helvetica-Bold").fontSize(18).fillColor(INK);
+    doc.text(`£${(booking.totalPence / 100).toFixed(2)}`, infoX, noteY + 31);
 
     // Footer
-    doc.font("Helvetica").fontSize(8).fillColor("#999999");
+    doc.font("Helvetica").fontSize(8).fillColor("#8e8e93");
     doc.text(
-      "Tickets are non-transferable and valid only for the screening shown. cinego · portfolio demonstration project",
-      M,
-      800,
+      "Tickets are non-transferable and valid only for the screening shown.  ·  Cinego is a portfolio demonstration project.",
+      left,
+      cardY + cardH - 34,
       { width: inner, align: "center" },
     );
   });
