@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { admin, money, showDate } from "../lib/api";
 import { useProfile, useSession } from "../lib/hooks";
+import { NotFound } from "./NotFound";
 import type { AdminBooking, AdminOverview } from "../types";
 
 type Tab = "overview" | "bookings" | "check";
@@ -23,25 +23,8 @@ export function Admin() {
   const [tab, setTab] = useState<Tab>("overview");
   if (session === undefined || (session && profile.isLoading))
     return <section className="section narrow empty">Loading…</section>;
-  if (!session || !profile.data?.isAdmin)
-    return (
-      <section className="section narrow empty-state">
-        <span className="eyebrow">Admin</span>
-        <h1 className="page-title">Staff only.</h1>
-        <p className="page-intro">
-          {session
-            ? "This account doesn’t have admin access."
-            : "Sign in with an admin account to continue."}
-        </p>
-        {!session && (
-          <div className="ticket-actions">
-            <Link to="/account" className="button">
-              Sign in
-            </Link>
-          </div>
-        )}
-      </section>
-    );
+  // Non-admins get the ordinary 404, so the page doesn't advertise itself.
+  if (!session || !profile.data?.isAdmin) return <NotFound />;
   return (
     <section className="section admin-page">
       <span className="eyebrow">Admin</span>

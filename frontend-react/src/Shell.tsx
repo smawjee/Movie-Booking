@@ -10,7 +10,8 @@ export function Shell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const session = useSession();
-  const isAdmin = useProfile(Boolean(session)).data?.isAdmin;
+  const profile = useProfile(Boolean(session));
+  const isAdmin = Boolean(session) && profile.data?.isAdmin === true;
   useEffect(() => setMenuOpen(false), [pathname]);
   useEffect(() => {
     if (!menuOpen) return;

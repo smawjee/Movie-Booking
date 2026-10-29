@@ -120,7 +120,8 @@ export function TicketActions({
       )}
       {send.isSuccess && delivery?.status === "sent" && (
         <p className="auth-message" role="status">
-          Ticket emailed to {sentTo}.
+          Ticket emailed to {sentTo}. If it isn’t there in a few minutes, check
+          the spam or junk folder.
         </p>
       )}
       {delivery?.status === "preview" && (
