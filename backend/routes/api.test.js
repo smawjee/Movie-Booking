@@ -54,6 +54,15 @@ const reserve = (screening, seatIds, ageConfirmation = adult) =>
   });
 
 describe("screenings", () => {
+  it("lists films showing this week with the dates they play", async () => {
+    const res = await call("/api/movies/showing?cinema=edinburgh");
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThan(0);
+    for (const film of res.body) {
+      expect(film.dates.length).toBeGreaterThan(0);
+      expect([...film.dates].sort()).toEqual(film.dates);
+    }
+  });
   it("rejects dates outside the booking window", async () => {
     const res = await call("/api/screenings?date=2000-01-01");
     expect(res.status).toBe(400);

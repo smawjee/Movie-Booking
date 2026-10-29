@@ -44,6 +44,7 @@ const screenings = new Map(),
   reservations = new Map(),
   bookings = new Map();
 const { planDay } = require("./schedule");
+const { ukNow } = require("./showtimes");
 const { SCREENS, isCinema } = require("./cinemas");
 const uuid = () => crypto.randomUUID();
 const hash = (s) =>
@@ -52,7 +53,7 @@ function buildScreenings(
   movies,
   {
     cinema = "edinburgh",
-    date = new Date().toISOString().slice(0, 10),
+    date = ukNow().date,
     format,
   } = {},
 ) {

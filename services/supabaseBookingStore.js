@@ -2,6 +2,7 @@ const { supabase } = require("./supabaseClient");
 const { stripe, stripeConfigured } = require("./stripeClient");
 const { experiences, pricingMetadata } = require("./cinemaStore");
 const { planDay } = require("./schedule");
+const { ukNow } = require("./showtimes");
 
 const hash = (s) =>
   Math.abs([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
@@ -42,7 +43,7 @@ async function buildScreenings(
   movies,
   {
     cinema = "edinburgh",
-    date = new Date().toISOString().slice(0, 10),
+    date = ukNow().date,
     format,
   } = {},
 ) {

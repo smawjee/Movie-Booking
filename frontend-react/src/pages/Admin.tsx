@@ -54,7 +54,7 @@ function Overview() {
     queryKey: ["admin", "overview"],
     queryFn: admin.overview,
   });
-  if (overview.isLoading) return <div className="empty">Loading figures…</div>;
+  if (overview.isLoading) return <div className="empty loading">Loading figures…</div>;
   if (overview.isError)
     return (
       <p className="error" role="alert">
@@ -173,7 +173,7 @@ function Bookings() {
         </p>
       )}
       {bookings.isLoading ? (
-        <div className="empty">Loading bookings…</div>
+        <div className="empty loading">Loading bookings…</div>
       ) : bookings.isError ? (
         <p className="error" role="alert">
           {bookings.error.message}

@@ -89,7 +89,7 @@ export function Account() {
         {active === "payments" && <PaymentMethods />}
         {(active === "verification" || active === "profile") &&
           (profile.isLoading ? (
-            <div className="empty">Loading profile…</div>
+            <div className="empty loading">Loading profile…</div>
           ) : profile.isError ? (
             <div className="empty" role="alert">
               {(profile.error as Error).message}

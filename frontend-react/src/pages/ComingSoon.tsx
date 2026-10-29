@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CinemaSelect } from "../components/CinemaSelect";
-import { api, money, poster } from "../lib/api";
+import { api, money, poster, showDate } from "../lib/api";
 
 function advanceDates(count: number) {
   return Array.from({ length: count }, (_, index) => {
     const d = new Date();
     d.setDate(d.getDate() + index + 7);
-    return d.toISOString().slice(0, 10);
+    return d.toLocaleDateString("en-CA");
   });
 }
 
@@ -46,14 +46,14 @@ export function ComingSoon() {
           <select value={date} onChange={(e) => setDate(e.target.value)}>
             {dates.map((d) => (
               <option key={d} value={d}>
-                {d}
+                {showDate(d)}
               </option>
             ))}
           </select>
         </label>
       </div>
       {movies.isLoading || screens.isLoading ? (
-        <div className="empty">Loading upcoming releases…</div>
+        <div className="empty loading">Loading upcoming releases…</div>
       ) : movies.isError ? (
         <div className="empty">Upcoming releases are temporarily unavailable.</div>
       ) : (

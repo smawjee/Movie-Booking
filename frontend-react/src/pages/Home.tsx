@@ -77,7 +77,7 @@ export function Home() {
           </div>
         </div>
         {films.isLoading ? (
-          <div className="empty">Loading films…</div>
+          <div className="empty loading">Loading films…</div>
         ) : films.isError ? (
           <div className="empty">Movies are temporarily unavailable.</div>
         ) : (
@@ -104,7 +104,7 @@ export function Home() {
           </Link>
         </div>
         {upcoming.isLoading ? (
-          <div className="empty">Loading upcoming releases…</div>
+          <div className="empty loading">Loading upcoming releases…</div>
         ) : upcoming.isError ? (
           <div className="empty">Upcoming releases are temporarily unavailable.</div>
         ) : (

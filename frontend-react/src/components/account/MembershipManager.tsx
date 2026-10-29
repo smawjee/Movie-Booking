@@ -28,7 +28,7 @@ export function MembershipManager() {
     },
   });
   const resume = useMutation({ mutationFn: api.resumeMembership, onSuccess: refresh });
-  if (mine.isLoading) return <div className="empty">Loading membership…</div>;
+  if (mine.isLoading) return <div className="empty loading">Loading membership…</div>;
   const membership = mine.data;
   const plan = plans.data?.find((p) => p.id === membership?.plan);
   const error = cancel.error || resume.error || mine.error;

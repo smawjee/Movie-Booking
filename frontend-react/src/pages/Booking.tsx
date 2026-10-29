@@ -20,6 +20,9 @@ import { PaymentForm } from "../components/PaymentForm";
 import { bookingRoute } from "../routes";
 import { useDelayedClose } from "../lib/useDelayedClose";
 
+// The reservation API accepts at most this many seats per booking.
+const MAX_SEATS = 12;
+
 export function Booking() {
   const { screening } = bookingRoute.useSearch();
   const navigate = useNavigate();
@@ -75,6 +78,15 @@ export function Booking() {
       setHold(x.id);
       setCheckout(true);
     },
+    // Someone may have taken a seat meanwhile: show the current map and
+    // drop seats that are no longer free.
+    onError: async () => {
+      const fresh = await seatsQuery.refetch();
+      const free = new Set(
+        fresh.data?.seats.filter((s) => s.available).map((s) => s.id),
+      );
+      if (fresh.data) setSelected((v) => v.filter((s) => free.has(s.id)));
+    },
   });
   const total = selected.reduce((s, x) => s + x.pricePence, 0);
   const paymentIntent = useReservationPaymentIntent(
@@ -100,7 +112,7 @@ export function Booking() {
     reservation.error instanceof ApiError &&
     reservation.error.code === "ID_VERIFICATION_REQUIRED";
   if (detail.isLoading)
-    return <section className="section empty">Loading screening…</section>;
+    return <section className="section empty loading">Loading screening…</section>;
   if (!detail.data)
     return <section className="section empty">Screening unavailable.</section>;
   if (!age)
@@ -151,7 +163,11 @@ export function Booking() {
             {seatsQuery.data?.seats.map((seat) => (
               <button
                 key={seat.id}
-                disabled={!seat.available}
+                disabled={
+                  !seat.available ||
+                  (selected.length >= MAX_SEATS &&
+                    !selected.some((x) => x.id === seat.id))
+                }
                 className={`${seat.tier} ${selected.some((x) => x.id === seat.id) ? "selected" : ""}`}
                 onClick={() =>
                   setSelected((v) =>
@@ -174,6 +190,11 @@ export function Booking() {
               "Choose seats from the map."}
           </p>
           <strong>{money(total)}</strong>
+          {selected.length >= MAX_SEATS && (
+            <p className="muted small">
+              Up to {MAX_SEATS} seats per booking.
+            </p>
+          )}
           <label>
             Email for tickets
             <input

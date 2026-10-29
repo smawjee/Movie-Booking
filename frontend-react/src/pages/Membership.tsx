@@ -69,7 +69,7 @@ export function Membership() {
       )}
 
       {plans.isLoading ? (
-        <div className="empty">Loading plans…</div>
+        <div className="empty loading">Loading plans…</div>
       ) : (
         <div className="plan-grid">
           {plans.data?.map((plan) => {

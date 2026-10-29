@@ -44,7 +44,7 @@ export function AuthCallback() {
           {error} <Link to="/account">Back to sign in</Link>
         </div>
       ) : (
-        <div className="empty">Completing secure sign-in…</div>
+        <div className="empty loading">Completing secure sign-in…</div>
       )}
     </section>
   );

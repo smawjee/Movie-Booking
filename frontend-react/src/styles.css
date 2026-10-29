@@ -479,10 +479,6 @@ main {
   transition:
     opacity 300ms var(--ease-out),
     transform 300ms var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: translateY(8px);
-  }
 }
 .movie-poster {
   position: relative;
@@ -708,10 +704,10 @@ main {
   gap: 1.3rem;
   padding: 1rem;
   opacity: 1;
-  transition: opacity var(--duration-base) var(--ease-out);
-  @starting-style {
-    opacity: 0;
-  }
+  transition:
+    transform 300ms var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out);
 }
 .screening > img {
   width: 170px;
@@ -797,10 +793,6 @@ main {
     box-shadow var(--duration-base) var(--ease-out),
     border-color var(--duration-base) var(--ease-out),
     opacity 300ms var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: translateY(8px);
-  }
 }
 .experience-body,
 .plan {
@@ -956,10 +948,6 @@ main {
     box-shadow var(--duration-base) var(--ease-out),
     border-color var(--duration-base) var(--ease-out),
     opacity 300ms var(--ease-out);
-  @starting-style {
-    opacity: 0;
-    transform: translateY(8px);
-  }
 }
 .food-image {
   height: 220px;
@@ -1957,63 +1945,219 @@ footer {
   font-size: var(--text-sm);
 }
 
-/* Staggered grid entrance: first 8 cards in each grid fade in with an
-   increasing delay; items beyond that appear together with no extra delay. */
+/* Staggered grid entrance: first 8 cards in each grid rise in with an
+   increasing delay; items beyond that appear together with no extra delay.
+   A keyframe animation (not a transition) so hover effects stay instant. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.movie-grid > *,
+.experience-grid > *,
+.plan-grid > *,
+.food-grid > *,
+.screening-list > * {
+  animation: rise-in 450ms var(--ease-out) backwards;
+}
 .movie-grid > *:nth-child(1),
 .experience-grid > *:nth-child(1),
 .plan-grid > *:nth-child(1),
 .food-grid > *:nth-child(1),
 .screening-list > *:nth-child(1) {
-  transition-delay: 0ms;
+  animation-delay: 0ms;
 }
 .movie-grid > *:nth-child(2),
 .experience-grid > *:nth-child(2),
 .plan-grid > *:nth-child(2),
 .food-grid > *:nth-child(2),
 .screening-list > *:nth-child(2) {
-  transition-delay: 40ms;
+  animation-delay: 40ms;
 }
 .movie-grid > *:nth-child(3),
 .experience-grid > *:nth-child(3),
 .plan-grid > *:nth-child(3),
 .food-grid > *:nth-child(3),
 .screening-list > *:nth-child(3) {
-  transition-delay: 80ms;
+  animation-delay: 80ms;
 }
 .movie-grid > *:nth-child(4),
 .experience-grid > *:nth-child(4),
 .plan-grid > *:nth-child(4),
 .food-grid > *:nth-child(4),
 .screening-list > *:nth-child(4) {
-  transition-delay: 120ms;
+  animation-delay: 120ms;
 }
 .movie-grid > *:nth-child(5),
 .experience-grid > *:nth-child(5),
 .plan-grid > *:nth-child(5),
 .food-grid > *:nth-child(5),
 .screening-list > *:nth-child(5) {
-  transition-delay: 160ms;
+  animation-delay: 160ms;
 }
 .movie-grid > *:nth-child(6),
 .experience-grid > *:nth-child(6),
 .plan-grid > *:nth-child(6),
 .food-grid > *:nth-child(6),
 .screening-list > *:nth-child(6) {
-  transition-delay: 200ms;
+  animation-delay: 200ms;
 }
 .movie-grid > *:nth-child(7),
 .experience-grid > *:nth-child(7),
 .plan-grid > *:nth-child(7),
 .food-grid > *:nth-child(7),
 .screening-list > *:nth-child(7) {
-  transition-delay: 240ms;
+  animation-delay: 240ms;
 }
 .movie-grid > *:nth-child(8),
 .experience-grid > *:nth-child(8),
 .plan-grid > *:nth-child(8),
 .food-grid > *:nth-child(8),
 .screening-list > *:nth-child(8) {
-  transition-delay: 280ms;
+  animation-delay: 280ms;
+}
+
+/* ---- Motion: hover details and small animations ---------------------- */
+.movie-poster {
+  transition:
+    transform 350ms var(--ease-out),
+    box-shadow 350ms var(--ease-out);
+}
+.movie-poster img {
+  transition: transform 600ms var(--ease-out);
+}
+/* Darken the poster's lower edge on hover so the badge and play button
+   stay legible over bright artwork. */
+.movie-poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(10, 10, 12, 0.75), transparent 55%);
+  opacity: 0;
+  transition: opacity 350ms var(--ease-out);
+}
+.movie-rating,
+.trailer-play {
+  z-index: 1;
+}
+.movie h3 {
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.screening > img {
+  transition: transform 500ms var(--ease-out);
+}
+.time strong {
+  transition: color var(--duration-fast) var(--ease-out);
+}
+/* Gold buttons: a light sheen sweeps across on hover. */
+.button:not(.secondary):not(.danger) {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.button:not(.secondary):not(.danger)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 650ms var(--ease-out);
+  pointer-events: none;
+}
+/* Nav links: an accent underline grows from the centre. */
+.header nav a {
+  position: relative;
+}
+.header nav a::after {
+  content: "";
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  bottom: 0.2rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.header nav a[data-status="active"]::after {
+  transform: scaleX(1);
+}
+/* Hero copy rises in line by line on page load. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+.page-hero-pattern > div > *,
+.page-hero > div > * {
+  animation: hero-in 700ms var(--ease-out) backwards;
+}
+.page-hero-pattern > div > :nth-child(2),
+.page-hero > div > :nth-child(2) {
+  animation-delay: 90ms;
+}
+.page-hero-pattern > div > :nth-child(3),
+.page-hero > div > :nth-child(3) {
+  animation-delay: 180ms;
+}
+.page-hero-pattern > div > :nth-child(4),
+.page-hero > div > :nth-child(4) {
+  animation-delay: 270ms;
+}
+.page-hero-pattern h1 em {
+  background: linear-gradient(90deg, var(--accent), #ffe9a3, var(--accent));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    hero-in 700ms var(--ease-out) backwards,
+    shine 6s linear 1s infinite;
+}
+@keyframes shine {
+  to {
+    background-position: -200% center;
+  }
+}
+/* A picked seat pops. */
+@keyframes seat-pop {
+  50% {
+    transform: scale(1.18);
+  }
+}
+.seats .selected {
+  animation: seat-pop 260ms var(--ease-out);
+}
+/* Loading messages pulse gently so a wait doesn't look frozen. */
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+.loading {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.next-dates {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+.next-dates .button {
+  min-height: 36px;
+  padding-block: 0.4rem;
+  font-size: var(--text-sm);
 }
 
 /* Breakpoints: 1100px -> 800px -> 500px, each declared once. */
@@ -2222,10 +2366,43 @@ footer {
     filter: brightness(1.06);
   }
   .movie:hover .movie-poster {
-    box-shadow: var(--shadow-2);
+    transform: translateY(-6px);
+    box-shadow:
+      var(--shadow-2),
+      0 0 0 1px rgba(245, 201, 72, 0.45),
+      0 14px 40px -12px rgba(245, 201, 72, 0.35);
   }
   .movie:hover .movie-poster img {
+    transform: scale(1.07);
+  }
+  .movie:hover .movie-poster::after {
+    opacity: 1;
+  }
+  .movie:hover h3 {
+    color: var(--accent);
+  }
+  .screening:hover {
+    transform: translateY(-3px);
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-2);
+  }
+  .screening:hover > img {
     transform: scale(1.03);
+  }
+  .time:hover {
+    transform: translateY(-2px);
+  }
+  .time:hover strong {
+    color: var(--accent);
+  }
+  .button:not(.secondary):not(.danger):hover:not(:disabled)::after {
+    transform: translateX(120%);
+  }
+  .header nav a:hover::after {
+    transform: scaleX(1);
+  }
+  .seats button:hover:not(:disabled) {
+    transform: translateY(-2px);
   }
   .trailer-play:hover {
     background: rgba(20, 20, 22, 0.7);
@@ -2243,6 +2420,7 @@ footer {
   }
   .clear-filters:hover,
   .time:hover {
+    /* colour cues; .time also lifts (above) */
     border-color: var(--line-strong);
     background: rgba(255, 255, 255, 0.09);
   }

@@ -17,6 +17,8 @@ export interface Movie {
   runtime: number;
   language: string;
   release_date?: string;
+  /** Days with showtimes still to come (only from /api/movies/showing). */
+  dates?: string[];
 }
 export interface Experience {
   id: ExperienceId;

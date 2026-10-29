@@ -1,16 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MovieTrie } from "../lib/movieTrie";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Play, SlidersHorizontal } from "lucide-react";
 import { CinemaSelect } from "../components/CinemaSelect";
-import { api, money, poster } from "../lib/api";
+import { api, money, poster, showDate } from "../lib/api";
 import { experiences } from "../lib/experiences";
 import { languageLabel, languageName } from "../lib/language";
 import { useTrailers } from "../lib/hooks";
 import { TrailerModal } from "../components/TrailerModal";
 import { moviesRoute } from "../routes";
 import type { Trailer } from "../types";
+
+const todayIso = () => new Date().toLocaleDateString("en-CA");
 
 export function Movies() {
   const search = moviesRoute.useSearch();
@@ -25,7 +27,7 @@ export function Movies() {
     (trailers.data || []).map((t) => [t.id, t] as const),
   );
   const [cinema, setCinema] = useState("edinburgh"),
-    [date, setDate] = useState(new Date().toLocaleDateString("en-CA")),
+    [date, setDate] = useState(todayIso),
     [format, setFormat] = useState(""),
     [rating, setRating] = useState(""),
     [genre, setGenre] = useState(""),
@@ -51,6 +53,28 @@ export function Movies() {
   const languages = [
     ...new Set((showing.data || []).map((m) => m.language).filter(Boolean)),
   ].sort((a, b) => languageName(a).localeCompare(languageName(b)));
+  // A film picked from the home page or search may not play on the chosen day
+  // (a day's programme is fixed once made, and evening showings pass), so
+  // jump once to the first day that exact film is on at this cinema.
+  const nextDates = [
+    ...new Set(titleMatches.flatMap((m) => m.dates || [])),
+  ].sort();
+  const jumpedFor = useRef("");
+  useEffect(() => {
+    const key = `${cinema}|${title}`;
+    if (!title || !screens.data || !showing.data || jumpedFor.current === key)
+      return;
+    jumpedFor.current = key;
+    const picked = titleMatches.filter(
+      (m) => m.title.toLowerCase() === title.trim().toLowerCase(),
+    );
+    if (!picked.length || picked.some((m) => scheduled.has(m.id))) return;
+    const first = picked
+      .flatMap((m) => m.dates || [])
+      .sort()
+      .find((d) => d >= todayIso());
+    if (first && first !== date) setDate(first);
+  });
   const list = titleMatches.filter(
     (m) =>
       scheduled.has(m.id) &&
@@ -67,7 +91,9 @@ export function Movies() {
       >
         <div className="filter-heading">
           <span className="eyebrow">Find your film</span>
-          <strong>{list.length} results</strong>
+          <strong>
+            {list.length} {list.length === 1 ? "result" : "results"}
+          </strong>
           <button
             type="button"
             className="filter-toggle"
@@ -95,7 +121,7 @@ export function Movies() {
           Date
           <input
             type="date"
-            min={new Date().toLocaleDateString("en-CA")}
+            min={todayIso()}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -173,7 +199,7 @@ export function Movies() {
           ))}
       </div>
       {showing.isLoading || screens.isLoading ? (
-        <div className="empty">Loading showtimes…</div>
+        <div className="empty loading">Loading showtimes…</div>
       ) : showing.isError || screens.isError ? (
         <div className="empty" role="alert">
           Unable to load showtimes.{" "}
@@ -189,10 +215,29 @@ export function Movies() {
       ) : list.length === 0 ? (
         <div className="empty" role="status">
           {title && titleMatches.length === 0
-            ? `“${title}” isn’t showing at this cinema. Try another cinema, or browse Coming soon.`
+            ? `“${title}” isn’t showing at this cinema this week. Try another cinema, or browse Coming soon.`
             : titleMatches.length > 0 && format
               ? "That film isn’t showing in this format. Try “All formats”."
-              : "No films have showtimes matching these filters. Try another date or format."}
+              : titleMatches.length > 0 && nextDates.some((d) => d !== date)
+                ? "No showtimes left on this date."
+                : "No films have showtimes matching these filters. Try another date or format."}
+          {!format && nextDates.some((d) => d !== date) && (
+            <div className="next-dates">
+              {nextDates
+                .filter((d) => d !== date)
+                .slice(0, 4)
+                .map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className="button secondary"
+                    onClick={() => setDate(d)}
+                  >
+                    {showDate(d).replace(/ \d{4}$/, "")}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="screening-list">

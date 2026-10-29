@@ -35,13 +35,32 @@ router.get("/trailers", (req, res) =>
   respond(req, res, "trailers", getTrailers),
 );
 const { isCinema } = require("../../services/cinemas");
-// Films with screenings at a cinema. The schedule assigns films to auditorium
-// slots independently of date, so today's programme is the whole run.
+const { addDays, ukNow, upcomingOnly } = require("../../services/showtimes");
+// Films with a showtime still to come at a cinema over the next week, each
+// with the dates it plays. A day's schedule is fixed once created (people may
+// have booked it), so today can lack films that later days include, and
+// today's last showing may already have started.
+const SHOWING_DAYS = 7;
 async function showingAt(cinema) {
   const films = await getNowPlaying();
-  const screenings = await store.buildScreenings(films, { cinema });
-  const ids = new Set(screenings.map((s) => s.movieId));
-  return films.filter((film) => ids.has(film.id));
+  const today = ukNow().date;
+  const days = Array.from({ length: SHOWING_DAYS }, (_, i) =>
+    addDays(today, i),
+  );
+  const perDay = await Promise.all(
+    days.map((date) => store.buildScreenings(films, { cinema, date })),
+  );
+  const dates = new Map();
+  perDay.forEach((screenings, i) => {
+    for (const s of upcomingOnly(screenings)) {
+      const list = dates.get(s.movieId) || [];
+      if (!list.includes(days[i])) list.push(days[i]);
+      dates.set(s.movieId, list);
+    }
+  });
+  return films
+    .filter((film) => dates.has(film.id))
+    .map((film) => ({ ...film, dates: dates.get(film.id) }));
 }
 router.get("/showing", (req, res) => {
   const cinema = String(req.query.cinema || "edinburgh");

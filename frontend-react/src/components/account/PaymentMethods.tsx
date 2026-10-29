@@ -101,7 +101,7 @@ export function PaymentMethods() {
         </div>
       )}
       {cards.isLoading ? (
-        <div className="empty">Loading cards…</div>
+        <div className="empty loading">Loading cards…</div>
       ) : !cards.data?.cards.length ? (
         <div className="empty">
           No saved cards yet. Tick “Save for future purchases” at checkout, or

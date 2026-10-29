@@ -41,7 +41,7 @@ export function Trailers() {
         ))}
       </div>
       {trailers.isLoading ? (
-        <div className="empty">Loading trailers…</div>
+        <div className="empty loading">Loading trailers…</div>
       ) : trailers.isError || !list.length ? (
         <div className="empty" role="status">
           {trailers.isError
