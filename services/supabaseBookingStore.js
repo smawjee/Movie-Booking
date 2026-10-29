@@ -1,6 +1,7 @@
 const { supabase } = require("./supabaseClient");
 const { stripe, stripeConfigured } = require("./stripeClient");
 const { experiences, pricingMetadata } = require("./cinemaStore");
+const { planDay } = require("./schedule");
 
 const formats = Object.keys(experiences);
 const hash = (s) =>
@@ -41,87 +42,88 @@ async function buildScreenings(
     format,
   } = {},
 ) {
-  const auditoriums = await auditoriumMap();
-  const slice = movies.slice(0, 20);
-  if (!slice.length) return [];
+  const map = await auditoriumMap();
+  const auditoriums = formats
+    .map((formatId) => {
+      const aud = map.get(`${cinema}|${formatId}`);
+      return aud && { ...aud, formatId };
+    })
+    .filter(Boolean);
+  const plan = planDay(movies, auditoriums);
+  if (!plan.length) return [];
 
-  const movieRows = slice.map((m) => ({
-    id: m.id,
-    title: m.title,
-    overview: m.overview || "",
-    poster_path: m.poster_path || null,
-    rating: m.rating || "NR",
-    runtime: m.runtime || null,
-    language: m.language || "en",
-    genre_ids: m.genre_ids || [],
-  }));
-  const { error: movieError } = await supabase
-    .from("movies")
-    .upsert(movieRows, { onConflict: "id" });
+  const planned = [...new Map(plan.map((p) => [p.movie.id, p.movie])).values()];
+  const { error: movieError } = await supabase.from("movies").upsert(
+    planned.map((m) => ({
+      id: m.id,
+      title: m.title,
+      overview: m.overview || "",
+      poster_path: m.poster_path || null,
+      rating: m.rating || "NR",
+      runtime: m.runtime || null,
+      language: m.language || "en",
+      genre_ids: m.genre_ids || [],
+    })),
+    { onConflict: "id" },
+  );
   if (movieError) throw movieError;
 
-  const candidates = [];
-  const seenSlots = new Set();
-  slice.forEach((movie, index) => {
-    [11, 14, 17, 20].forEach((hour, slot) => {
-      const formatId = formats[(index + slot) % formats.length];
-      if (format && format !== formatId) return;
-      const aud = auditoriums.get(`${cinema}|${formatId}`);
-      if (!aud) return;
-      const startsAt = `${date}T${String(hour).padStart(2, "0")}:00:00.000Z`;
-      const slotKey = `${aud.id}|${startsAt}`;
-      // Each auditorium can only host one screening per showtime, so the
-      // first movie assigned to a given auditorium+time slot wins.
-      if (seenSlots.has(slotKey)) return;
-      seenSlots.add(slotKey);
-      candidates.push({
-        movie,
-        formatId,
-        aud,
-        startsAt,
-        time: `${String(hour).padStart(2, "0")}:00`,
-      });
-    });
-  });
-  if (!candidates.length) return [];
-
-  const screeningRows = candidates.map((c) => ({
-    movie_id: c.movie.id,
-    auditorium_id: c.aud.id,
-    starts_at: c.startsAt,
-    base_price_pence: 899 + experiences[c.formatId].surchargePence,
-    language: c.movie.language || "en",
-  }));
-  const { data: upserted, error: screeningError } = await supabase
-    .from("screenings")
-    .upsert(screeningRows, { onConflict: "auditorium_id,starts_at" })
-    .select("id, auditorium_id, starts_at");
-  if (screeningError) throw screeningError;
-  const idByKey = new Map(
-    upserted.map((r) => [
-      `${r.auditorium_id}|${new Date(r.starts_at).getTime()}`,
-      r.id,
-    ]),
+  // A screening, once created, keeps its film: people may have booked it.
+  // So new slots are inserted and existing ones are left alone, then the
+  // day is read back from the database as the source of truth.
+  const { error: screeningError } = await supabase.from("screenings").upsert(
+    plan.map((p) => ({
+      movie_id: p.movie.id,
+      auditorium_id: p.auditorium.id,
+      starts_at: `${date}T${String(p.hour).padStart(2, "0")}:00:00.000Z`,
+      base_price_pence: 899 + experiences[p.auditorium.formatId].surchargePence,
+      language: p.movie.language || "en",
+    })),
+    { onConflict: "auditorium_id,starts_at", ignoreDuplicates: true },
   );
+  if (screeningError) throw screeningError;
 
-  return candidates.map((c) => {
-    const exp = experiences[c.formatId];
-    return {
-      id: idByKey.get(`${c.aud.id}|${new Date(c.startsAt).getTime()}`),
-      movieId: c.movie.id,
-      movieTitle: c.movie.title,
-      posterPath: c.movie.poster_path,
-      cinema,
-      date,
-      time: c.time,
-      screen: c.aud.screenNumber,
-      experience: exp,
-      pricePence: 899 + exp.surchargePence,
-      rating: c.movie.rating || "NR",
-      runtime: c.movie.runtime || 120,
-      language: c.movie.language || "en",
-    };
-  });
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const { data: rows, error: readError } = await supabase
+    .from("screenings")
+    .select(
+      `id, movie_id, auditorium_id, starts_at, base_price_pence, language,
+       movies ( title, poster_path, rating, runtime )`,
+    )
+    .in(
+      "auditorium_id",
+      auditoriums.map((a) => a.id),
+    )
+    .gte("starts_at", `${date}T00:00:00.000Z`)
+    .lt("starts_at", next.toISOString())
+    .order("starts_at");
+  if (readError) throw readError;
+
+  const wanted = new Set(movies.map((m) => m.id));
+  const audById = new Map(auditoriums.map((a) => [a.id, a]));
+  return rows
+    .filter((row) => wanted.has(row.movie_id))
+    .map((row) => {
+      const aud = audById.get(row.auditorium_id);
+      const exp = experiences[aud.formatId];
+      return {
+        id: row.id,
+        movieId: row.movie_id,
+        movieTitle: row.movies.title,
+        posterPath: row.movies.poster_path,
+        cinema,
+        date,
+        time: new Date(row.starts_at).toISOString().slice(11, 16),
+        screen: aud.screenNumber,
+        experience: exp,
+        pricePence: row.base_price_pence,
+        rating: row.movies.rating || "NR",
+        runtime: row.movies.runtime || 120,
+        language: row.language || "en",
+      };
+    })
+    .filter((screening) => !format || screening.experience.id === format);
 }
 
 async function getScreening(id) {

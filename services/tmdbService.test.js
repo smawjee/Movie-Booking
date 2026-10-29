@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const require = createRequire(import.meta.url);
 process.env.TMDB_API_KEY = "";
 const tmdb = require("./tmdbService");
+const { MAX_FILMS } = require("./schedule");
 
 const films = (prefix, n) =>
   Array.from({ length: n }, (_, i) => ({ id: `${prefix}${i}` }));
@@ -22,10 +23,10 @@ describe("world cinema programme", () => {
       "uk5",
     ]);
   });
-  it("keeps world films within the first 20, which get showtimes", () => {
+  it("gives six world films a place among the films that get showtimes", () => {
     const mixed = tmdb.mixProgramme(films("uk", 20), films("w", 8));
-    const firstTwenty = mixed.slice(0, 20).map((m) => m.id);
-    expect(firstTwenty.filter((id) => id.startsWith("w"))).toHaveLength(6);
+    const scheduled = mixed.slice(0, MAX_FILMS).map((m) => m.id);
+    expect(scheduled.filter((id) => id.startsWith("w"))).toHaveLength(6);
   });
   it("doesn't repeat a world film that is already in the UK list", () => {
     const local = [{ id: 1 }, { id: 2 }];

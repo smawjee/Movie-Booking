@@ -207,7 +207,7 @@ async function worldCinema() {
 }
 
 // Two UK releases, then one world film, so the schedule (which only gives
-// showtimes to the first 20 films) always includes the world films.
+// showtimes to the first MAX_FILMS films) always includes world films.
 function mixProgramme(local, world) {
   const seen = new Set(local.map((movie) => movie.id));
   const extra = world.filter((movie) => !seen.has(movie.id));
