@@ -43,7 +43,8 @@ const experiences = {
 const screenings = new Map(),
   reservations = new Map(),
   bookings = new Map();
-const formats = Object.keys(experiences);
+const { planDay } = require("./schedule");
+const { SCREENS, isCinema } = require("./cinemas");
 const uuid = () => crypto.randomUUID();
 const hash = (s) =>
   Math.abs([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
@@ -55,14 +56,16 @@ function buildScreenings(
     format,
   } = {},
 ) {
-  const output = [];
-  movies.slice(0, 20).forEach((movie, index) => {
-    [11, 14, 17, 20].forEach((hour, slot) => {
-      const formatId = formats[(index + slot) % formats.length];
-      if (format && format !== formatId) return;
-      const exp = experiences[formatId];
+  if (!isCinema(cinema)) return [];
+  const screens = SCREENS.map((screen) => ({
+    ...screen,
+    id: screen.screenNumber,
+  }));
+  return planDay(movies, screens)
+    .map(({ movie, auditorium, hour }) => {
+      const exp = experiences[auditorium.formatId];
       const id = Buffer.from(
-        [movie.id, cinema, date, hour, formatId].join("|"),
+        [movie.id, cinema, date, hour, auditorium.screenNumber].join("|"),
       ).toString("base64url");
       const item = {
         id,
@@ -72,7 +75,7 @@ function buildScreenings(
         cinema,
         date,
         time: `${String(hour).padStart(2, "0")}:00`,
-        screen: 1 + ((index + slot) % 10),
+        screen: auditorium.screenNumber,
         experience: exp,
         pricePence: 899 + exp.surchargePence,
         rating: movie.rating || "NR",
@@ -80,12 +83,10 @@ function buildScreenings(
         language: movie.language || "en",
       };
       screenings.set(id, item);
-      output.push(item);
-    });
-  });
-  return output;
-}
-function getScreening(id) {
+      return item;
+    })
+    .filter((item) => !format || item.experience.id === format);
+}function getScreening(id) {
   return screenings.get(id);
 }
 function getSeats(screeningId) {

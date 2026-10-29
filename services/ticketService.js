@@ -57,11 +57,7 @@ async function ticketData(booking) {
   };
 }
 
-const cinemaNames = {
-  edinburgh: "Cinego Edinburgh",
-  glasgow: "Cinego Glasgow",
-  london: "Cinego London West End",
-};
+const { cinemaName: nameOfCinema } = require("./cinemas");
 const prettyDate = (iso) => {
   const date = new Date(`${iso}T12:00:00Z`);
   return Number.isNaN(date.valueOf())
@@ -167,8 +163,7 @@ async function pdf(booking) {
   const left = cardX + pad;
   const inner = cardW - pad * 2;
   const headerH = 96;
-  const cinemaName =
-    cinemaNames[screening.cinema] || `Cinego ${screening.cinema}`;
+  const cinemaName = nameOfCinema(screening.cinema);
   const rating = String(screening.rating || "NR");
   const pages = seats.length ? seats : [null];
 
@@ -388,8 +383,7 @@ function sender() {
     configured.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/) || [];
   const user = process.env.SMTP_USER || "";
   return {
-    name:
-      process.env.TICKET_FROM_NAME || configuredName || "Cinego Tickets",
+    name: process.env.TICKET_FROM_NAME || configuredName || "Cinego Tickets",
     address: user.includes("@") ? user : configuredAddress || configured,
   };
 }
@@ -474,7 +468,6 @@ module.exports = {
   deliver,
   sender,
   token,
-  cinemaNames,
   sendMessage,
   getPreview,
   pdf,

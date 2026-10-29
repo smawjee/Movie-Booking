@@ -3,6 +3,7 @@ import { MovieTrie } from "../lib/movieTrie";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Play, SlidersHorizontal } from "lucide-react";
+import { CinemaSelect } from "../components/CinemaSelect";
 import { api, money, poster } from "../lib/api";
 import { experiences } from "../lib/experiences";
 import { languageLabel, languageName } from "../lib/language";
@@ -88,11 +89,7 @@ export function Movies() {
         </label>
         <label>
           Cinema
-          <select value={cinema} onChange={(e) => setCinema(e.target.value)}>
-            <option value="edinburgh">Edinburgh</option>
-            <option value="glasgow">Glasgow</option>
-            <option value="london">London West End</option>
-          </select>
+          <CinemaSelect value={cinema} onChange={setCinema} />
         </label>
         <label>
           Date
@@ -204,6 +201,13 @@ export function Movies() {
               <img src={poster(movie.poster_path)} alt="" />
               <div>
                 <span className="badge">{movie.rating}</span>
+                {movie.classic && (
+                  <span className="badge classic-badge">
+                    Classic
+                    {movie.release_date &&
+                      ` · ${movie.release_date.slice(0, 4)}`}
+                  </span>
+                )}
                 {languageLabel(movie.language) && (
                   <span className="badge language-badge">
                     {languageLabel(movie.language)}

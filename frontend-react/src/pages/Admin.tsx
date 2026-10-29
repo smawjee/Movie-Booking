@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { admin, money, showDate } from "../lib/api";
 import { useProfile, useSession } from "../lib/hooks";
 import { NotFound } from "./NotFound";
+import { useCinemaLookup } from "../components/CinemaSelect";
 import type { AdminBooking, AdminOverview } from "../types";
 
 type Tab = "overview" | "bookings" | "check";
@@ -11,11 +12,6 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "bookings", label: "Bookings" },
   { id: "check", label: "Check tickets" },
 ];
-const cinemaNames: Record<string, string> = {
-  edinburgh: "Edinburgh",
-  glasgow: "Glasgow",
-  london: "London West End",
-};
 
 export function Admin() {
   const session = useSession();
@@ -144,6 +140,7 @@ function Bookings() {
     queryFn: () => admin.bookings(search),
   });
   const resend = useMutation({ mutationFn: admin.resend });
+  const cinema = useCinemaLookup();
   return (
     <div className="account-section">
       <form
@@ -207,7 +204,7 @@ function Bookings() {
                   <td>
                     {showDate(b.date)} {b.time}
                     <small>
-                      {cinemaNames[b.cinema] || b.cinema} · Screen {b.screen}
+                      {cinema(b.cinema)?.city || b.cinema} · Screen {b.screen}
                     </small>
                   </td>
                   <td>{b.seats.join(", ")}</td>
@@ -244,6 +241,7 @@ function Bookings() {
 function CheckTickets() {
   const [code, setCode] = useState("");
   const check = useMutation({ mutationFn: admin.verify });
+  const cinema = useCinemaLookup();
   const result = check.data;
   return (
     <div className="account-section">
@@ -285,7 +283,7 @@ function CheckTickets() {
                 {result.time}
               </p>
               <p>
-                {cinemaNames[result.cinema!] || result.cinema} · Screen{" "}
+                {cinema(result.cinema!)?.city || result.cinema} · Screen{" "}
                 {result.screen} · Seats {result.seats!.join(", ")}
               </p>
             </>

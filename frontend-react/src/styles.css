@@ -3328,3 +3328,8 @@ footer {
   color: var(--muted);
   font-size: var(--text-sm);
 }
+.classic-badge {
+  margin-left: 0.4rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+}

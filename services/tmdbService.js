@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const { MAX_FILMS } = require("./schedule");
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 const demoMovies = [
@@ -126,6 +127,32 @@ const demoMovies = [
     language: "fr",
     release_date: "2026-09-05",
   },
+  {
+    id: 900011,
+    title: "Starfall Highway",
+    overview:
+      "The cult road-movie classic about two drifters chasing a meteor across the desert.",
+    poster_path: null,
+    rating: "PG",
+    genre_ids: [12, 878],
+    runtime: 109,
+    language: "en",
+    release_date: "1987-06-19",
+    classic: true,
+  },
+  {
+    id: 900012,
+    title: "The Lighthouse Keeper's Daughter",
+    overview:
+      "A sweeping Scottish romance, restored in 4K for its anniversary run.",
+    poster_path: null,
+    rating: "PG",
+    genre_ids: [18, 10749],
+    runtime: 124,
+    language: "en",
+    release_date: "1994-03-04",
+    classic: true,
+  },
 ];
 
 async function fetchJson(url) {
@@ -158,7 +185,30 @@ async function getCertification(movieId) {
 // Films in other languages that UK cinemas commonly programme. TMDB's GB
 // "now playing" list is mostly English, so the most popular recent release
 // in each of these is added to the programme.
-const WORLD_LANGUAGES = ["hi", "pa", "ta", "te", "ko", "ja", "fr", "es"];
+const WORLD_LANGUAGES = [
+  // South Asian
+  "hi",
+  "pa",
+  "ta",
+  "te",
+  "ml",
+  "kn",
+  "ur",
+  "bn",
+  // East Asian
+  "ko",
+  "ja",
+  "zh",
+  // European and beyond
+  "fr",
+  "es",
+  "it",
+  "de",
+  "pl",
+  "tr",
+  "pt",
+];
+const CLASSICS_PER_WEEK = 4;
 const NOW_PLAYING_TTL_MS = 10 * 60 * 1000;
 
 async function describe(movie) {
@@ -181,12 +231,19 @@ async function describe(movie) {
     genre_ids: movie.genre_ids,
     runtime: details.runtime,
     language: details.original_language,
+    release_date: movie.release_date,
+    classic: Boolean(movie.classic),
     cast: credits.cast?.slice(0, 5).map((c) => c.name),
   };
 }
 
 const isoDay = (offsetDays) =>
   new Date(Date.now() + offsetDays * 86400000).toISOString().slice(0, 10);
+const dayNumber = () => Math.floor(Date.now() / 86400000);
+const rotate = (list, by) =>
+  list.length
+    ? [...list.slice(by % list.length), ...list.slice(0, by % list.length)]
+    : list;
 
 // The most popular film released in the last ~2 months for each language.
 async function worldCinema() {
@@ -201,23 +258,53 @@ async function worldCinema() {
       return data.results.find((movie) => movie.poster_path) || null;
     }),
   );
-  return picks
-    .filter((pick) => pick.status === "fulfilled" && pick.value)
-    .map((pick) => pick.value);
+  // Not every language fits in a day's programme, so the order rotates
+  // daily and each language gets its turn near the front.
+  return rotate(
+    picks
+      .filter((pick) => pick.status === "fulfilled" && pick.value)
+      .map((pick) => pick.value),
+    dayNumber(),
+  );
 }
 
-// Two UK releases, then one world film, so the schedule (which only gives
-// showtimes to the first MAX_FILMS films) always includes world films.
-function mixProgramme(local, world) {
-  const seen = new Set(local.map((movie) => movie.id));
-  const extra = world.filter((movie) => !seen.has(movie.id));
+// Old favourites back on the big screen: a few well-loved films at least
+// ten years old, changing every week.
+async function classics() {
+  const week = Math.floor(dayNumber() / 7);
+  const data = await fetchJson(
+    `${BASE_URL}/movie/top_rated?api_key=${TMDB_API_KEY}&language=en-US&region=GB&page=${(week % 5) + 1}`,
+  );
+  const cutoff = new Date().getFullYear() - 10;
+  const old = data.results.filter(
+    (movie) =>
+      movie.poster_path && Number(movie.release_date?.slice(0, 4)) <= cutoff,
+  );
+  return rotate(old, week * CLASSICS_PER_WEEK)
+    .slice(0, CLASSICS_PER_WEEK)
+    .map((movie) => ({ ...movie, classic: true }));
+}
+
+// Two UK releases, then one world film, with a classic every seventh place,
+// so the films that get showtimes (the first MAX_FILMS) always include
+// world cinema and classics.
+function mixProgramme(local, world, oldies = []) {
+  const seen = new Set();
+  const fresh = (list) =>
+    list.filter((movie) => !seen.has(movie.id) && seen.add(movie.id));
+  const uk = fresh(local);
+  const extra = fresh(world);
+  const replays = fresh(oldies);
   const mixed = [];
   let i = 0;
-  while (i < local.length || extra.length) {
-    mixed.push(...local.slice(i, i + 2));
+  while (i < uk.length || extra.length) {
+    mixed.push(...uk.slice(i, i + 2));
     i += 2;
     if (extra.length) mixed.push(extra.shift());
   }
+  replays.forEach((movie, n) =>
+    mixed.splice(Math.min(4 + n * 7, mixed.length), 0, movie),
+  );
   return mixed;
 }
 
@@ -229,13 +316,17 @@ async function getNowPlaying() {
   if (nowPlayingCache && nowPlayingCache.expires > Date.now())
     return nowPlayingCache.movies;
   const pending = (async () => {
-    const [local, world] = await Promise.all([
+    const [local, world, oldies] = await Promise.all([
       fetchJson(
         `${BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=1&region=GB`,
       ).then((data) => data.results),
       worldCinema().catch(() => []),
+      classics().catch(() => []),
     ]);
-    return Promise.all(mixProgramme(local, world).map(describe));
+    // Only films that can get a showtime are worth the detail lookups.
+    return Promise.all(
+      mixProgramme(local, world, oldies).slice(0, MAX_FILMS).map(describe),
+    );
   })();
   nowPlayingCache = {
     movies: pending,
@@ -353,6 +444,7 @@ async function getTrailers() {
 
 module.exports = {
   WORLD_LANGUAGES,
+  CLASSICS_PER_WEEK,
   mixProgramme,
   getNowPlaying,
   getUpcoming,

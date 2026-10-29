@@ -2,12 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { api, showDate } from "../lib/api";
 import { useDelayedClose } from "../lib/useDelayedClose";
-
-const cinemaNames: Record<string, string> = {
-  edinburgh: "Cinego Edinburgh",
-  glasgow: "Cinego Glasgow",
-  london: "Cinego London West End",
-};
+import { useCinemaLookup } from "./CinemaSelect";
 
 /** Shown instead of the real wallet hand-off until wallet credentials exist:
  *  the same pass content (film, time, seats, entry QR) the wallet would hold. */
@@ -21,6 +16,7 @@ export function WalletPreview({
   onClose: () => void;
 }) {
   const { closing, close } = useDelayedClose(onClose);
+  const cinema = useCinemaLookup();
   const booking = useQuery({
     queryKey: ["booking", reference],
     queryFn: () => api.booking(reference),
@@ -76,7 +72,7 @@ export function WalletPreview({
               </span>
               <span>
                 <small>CINEMA</small>
-                {cinemaNames[s.cinema] || s.cinema}
+                {cinema(s.cinema)?.name || s.cinema}
               </span>
               <span>
                 <small>SCREEN</small>

@@ -1,9 +1,15 @@
 export type ExperienceId =
   "standard" | "3d" | "imax" | "dolby" | "4dx" | "screenx";
+export interface Cinema {
+  slug: string;
+  name: string;
+  city: string;
+}
 export interface Movie {
   id: number;
   title: string;
   original_title?: string;
+  classic?: boolean;
   overview: string;
   poster_path: string | null;
   rating: string;

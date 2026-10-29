@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CinemaSelect } from "../components/CinemaSelect";
 import { api, money, poster } from "../lib/api";
 
 function advanceDates(count: number) {
@@ -38,11 +39,7 @@ export function ComingSoon() {
         </div>
         <label>
           Cinema
-          <select value={cinema} onChange={(e) => setCinema(e.target.value)}>
-            <option value="edinburgh">Edinburgh</option>
-            <option value="glasgow">Glasgow</option>
-            <option value="london">London West End</option>
-          </select>
+          <CinemaSelect value={cinema} onChange={setCinema} />
         </label>
         <label>
           Advance date

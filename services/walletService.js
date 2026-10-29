@@ -1,7 +1,8 @@
 const crypto = require("crypto");
 const forge = require("node-forge");
 const zip = require("do-not-zip");
-const { token, cinemaNames } = require("./ticketService");
+const { token } = require("./ticketService");
+const { cinemaName: nameOf } = require("./cinemas");
 const images = require("./walletImages");
 
 // Apple Wallet needs a Pass Type ID certificate from a paid Apple Developer
@@ -41,8 +42,7 @@ function ukInstant(date, time) {
 }
 const seatList = (booking) =>
   booking.seats.map((s) => `${s.row}${s.number}`).join(", ");
-const cinemaName = (booking) =>
-  cinemaNames[booking.screening.cinema] || "Cinego";
+const cinemaName = (booking) => nameOf(booking.screening.cinema);
 
 // --- Apple Wallet (.pkpass) ---
 

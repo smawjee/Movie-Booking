@@ -23,10 +23,23 @@ describe("world cinema programme", () => {
       "uk5",
     ]);
   });
-  it("gives six world films a place among the films that get showtimes", () => {
-    const mixed = tmdb.mixProgramme(films("uk", 20), films("w", 8));
+  it("schedules world films and the week's classics, not just UK releases", () => {
+    const mixed = tmdb.mixProgramme(
+      films("uk", 20),
+      films("w", 18),
+      films("c", 4),
+    );
     const scheduled = mixed.slice(0, MAX_FILMS).map((m) => m.id);
-    expect(scheduled.filter((id) => id.startsWith("w"))).toHaveLength(6);
+    expect(scheduled.filter((id) => id.startsWith("c"))).toHaveLength(4);
+    expect(
+      scheduled.filter((id) => id.startsWith("w")).length,
+    ).toBeGreaterThanOrEqual(8);
+    expect(
+      scheduled.filter((id) => id.startsWith("uk")).length,
+    ).toBeGreaterThanOrEqual(15);
+  });
+  it("covers 18 languages", () => {
+    expect(new Set(tmdb.WORLD_LANGUAGES).size).toBe(18);
   });
   it("doesn't repeat a world film that is already in the UK list", () => {
     const local = [{ id: 1 }, { id: 2 }];

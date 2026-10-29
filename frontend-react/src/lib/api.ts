@@ -12,6 +12,7 @@ import type {
   Screening,
   Trailer,
   DocumentMeta,
+  Cinema,
   AdminBooking,
   AdminOverview,
   TicketCheck,
@@ -137,6 +138,7 @@ export const api = {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   },
   movies: () => json<Movie[]>("/api/movies/now-playing"),
+  cinemas: () => json<Cinema[]>("/api/cinemas"),
   showing: (cinema: string) =>
     json<Movie[]>(`/api/movies/showing?cinema=${encodeURIComponent(cinema)}`),
   upcoming: () => json<Movie[]>("/api/movies/upcoming"),

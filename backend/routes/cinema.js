@@ -20,6 +20,7 @@ const {
   ukNow,
   upcomingOnly,
 } = require("../../services/showtimes");
+const { CINEMAS } = require("../../services/cinemas");
 const router = express.Router();
 const bookingLookupLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -442,6 +443,7 @@ router.post("/memberships/resume", async (req, res) => {
 router.get("/offers/active", async (req, res) => {
   res.json(await store.getActiveOffers());
 });
+router.get("/cinemas", (req, res) => res.json(CINEMAS));
 router.get("/experiences", (req, res) =>
   res.json(Object.values(store.experiences)),
 );

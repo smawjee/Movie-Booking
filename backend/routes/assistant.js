@@ -3,6 +3,7 @@ const { z } = require("zod");
 const rateLimit = require("express-rate-limit").rateLimit;
 const OpenAI = require("openai").default;
 const { getNowPlaying } = require("../../services/tmdbService");
+const { CINEMAS } = require("../../services/cinemas");
 const store = require("../../services/store");
 const { addDays, ukNow, upcomingOnly } = require("../../services/showtimes");
 const router = express.Router();
@@ -30,11 +31,9 @@ const ratingInfo = {
 };
 async function context(message) {
   const movies = await getNowPlaying();
-  const city = /glasgow/i.test(message)
-    ? "glasgow"
-    : /london/i.test(message)
-      ? "london"
-      : "edinburgh";
+  const city =
+    CINEMAS.find((cinema) => new RegExp(cinema.slug, "i").test(message))
+      ?.slug || "edinburgh";
   const today = ukNow().date;
   const date = /tomorrow/i.test(message) ? addDays(today, 1) : today;
   const format = ["4dx", "imax", "dolby", "screenx", "3d"].find((x) =>

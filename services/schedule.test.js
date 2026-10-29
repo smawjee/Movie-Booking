@@ -6,13 +6,22 @@ const { planDay, MAX_FILMS, SHOWTIMES } = require("./schedule");
 
 const films = (n) =>
   Array.from({ length: n }, (_, i) => ({ id: i + 1, title: `Film ${i + 1}` }));
-const screens = ["standard", "3d", "imax", "dolby", "4dx", "screenx"].map(
-  (formatId, i) => ({ id: `aud-${i}`, screenNumber: i + 1, formatId }),
-);
+const screens = [
+  "3d",
+  "4dx",
+  "dolby",
+  "imax",
+  "screenx",
+  "standard",
+  "standard",
+  "standard",
+  "standard",
+  "3d",
+].map((formatId, i) => ({ id: `aud-${i}`, screenNumber: i + 1, formatId }));
 
 describe("planDay", () => {
-  it("gives a showtime to 18 different films, not just the first six", () => {
-    const plan = planDay(films(25), screens);
+  it("gives a showtime to MAX_FILMS different films, not just the first few", () => {
+    const plan = planDay(films(40), screens);
     expect(plan).toHaveLength(SHOWTIMES.length * screens.length);
     expect(new Set(plan.map((p) => p.movie.id)).size).toBe(MAX_FILMS);
   });
@@ -27,7 +36,7 @@ describe("planDay", () => {
     }
   });
   it("shows the most popular film twice, in two different formats", () => {
-    const top = planDay(films(25), screens).filter((p) => p.movie.id === 1);
+    const top = planDay(films(40), screens).filter((p) => p.movie.id === 1);
     expect(top).toHaveLength(2);
     expect(top[0].auditorium.id).not.toBe(top[1].auditorium.id);
   });
@@ -140,7 +149,7 @@ describe("Supabase schedule", () => {
     ).toBe(true);
     expect(day.find((s) => s.id === "booked").movieId).toBe(3);
     expect(day.some((s) => s.id === "other-day")).toBe(false);
-    expect(new Set(day.map((s) => s.movieId)).size).toBeGreaterThanOrEqual(17);
+    expect(new Set(day.map((s) => s.movieId)).size).toBeGreaterThanOrEqual(24);
   });
   it("filters by format after planning, so the schedule doesn't change", async () => {
     const imax = await store.buildScreenings(films(25), {

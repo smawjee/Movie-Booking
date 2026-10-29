@@ -3,7 +3,6 @@ const { stripe, stripeConfigured } = require("./stripeClient");
 const { experiences, pricingMetadata } = require("./cinemaStore");
 const { planDay } = require("./schedule");
 
-const formats = Object.keys(experiences);
 const hash = (s) =>
   Math.abs([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
 
@@ -15,12 +14,17 @@ async function auditoriumMap() {
         .from("auditoriums")
         .select("id, experience_id, screen_number, cinemas ( slug )");
       if (error) throw error;
+      // Cinema slug -> its screens, in screen-number order.
       const map = new Map();
-      for (const row of data)
-        map.set(`${row.cinemas.slug}|${row.experience_id}`, {
+      for (const row of [...data].sort((a, b) => a.screen_number - b.screen_number)) {
+        const screens = map.get(row.cinemas.slug) || [];
+        screens.push({
           id: row.id,
           screenNumber: row.screen_number,
+          formatId: row.experience_id,
         });
+        map.set(row.cinemas.slug, screens);
+      }
       return map;
     })();
   }
@@ -42,13 +46,7 @@ async function buildScreenings(
     format,
   } = {},
 ) {
-  const map = await auditoriumMap();
-  const auditoriums = formats
-    .map((formatId) => {
-      const aud = map.get(`${cinema}|${formatId}`);
-      return aud && { ...aud, formatId };
-    })
-    .filter(Boolean);
+  const auditoriums = (await auditoriumMap()).get(cinema) || [];
   const plan = planDay(movies, auditoriums);
   if (!plan.length) return [];
 

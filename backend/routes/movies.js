@@ -34,7 +34,7 @@ router.get("/upcoming", (req, res) =>
 router.get("/trailers", (req, res) =>
   respond(req, res, "trailers", getTrailers),
 );
-const cinemas = new Set(["edinburgh", "glasgow", "london"]);
+const { isCinema } = require("../../services/cinemas");
 // Films with screenings at a cinema. The schedule assigns films to auditorium
 // slots independently of date, so today's programme is the whole run.
 async function showingAt(cinema) {
@@ -45,7 +45,7 @@ async function showingAt(cinema) {
 }
 router.get("/showing", (req, res) => {
   const cinema = String(req.query.cinema || "edinburgh");
-  if (!cinemas.has(cinema))
+  if (!isCinema(cinema))
     return res.status(400).json({ error: "Unknown cinema" });
   return respond(req, res, `showing:${cinema}`, () => showingAt(cinema));
 });
