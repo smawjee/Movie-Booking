@@ -53,6 +53,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Hit daily by the Vercel cron in vercel.json. A free Supabase project is
+// paused after a week without database activity, which takes down
+// screenings and sign-in together; one tiny query a day keeps it awake.
+app.get("/api/keepalive", async (req, res) => {
+  const { supabase } = require("../services/supabaseClient");
+  if (!supabase) return res.json({ ok: true, database: "memory-fallback" });
+  const { error } = await supabase.from("cinemas").select("id").limit(1);
+  if (error) return res.status(503).json({ ok: false, error: error.message });
+  res.json({ ok: true, database: "supabase" });
+});
+
 // Unknown API paths answer in JSON like every other API error, rather than
 // Express's default HTML page.
 app.use("/api", (req, res) => {
