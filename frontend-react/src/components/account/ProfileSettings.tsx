@@ -18,6 +18,15 @@ export function ProfileSettings({ profile }: { profile: Profile }) {
       }),
     onSuccess: (data) => queryClient.setQueryData(["account", "profile"], data),
   });
+  const signOut = () => {
+    queryClient.removeQueries({ queryKey: ["account"] });
+    queryClient.removeQueries({ queryKey: ["membership"] });
+    void supabase?.auth.signOut();
+  };
+  const remove = useMutation({
+    mutationFn: account.deleteAccount,
+    onSuccess: signOut,
+  });
   return (
     <div className="account-section">
       <div className="section-head">
@@ -71,19 +80,37 @@ export function ProfileSettings({ profile }: { profile: Profile }) {
           <button className="button" disabled={save.isPending}>
             {save.isPending ? "Saving…" : "Save changes"}
           </button>
-          <button
-            type="button"
-            className="button secondary"
-            onClick={() => {
-              queryClient.removeQueries({ queryKey: ["account"] });
-              queryClient.removeQueries({ queryKey: ["membership"] });
-              void supabase?.auth.signOut();
-            }}
-          >
+          <button type="button" className="button secondary" onClick={signOut}>
             Sign out
           </button>
         </div>
       </form>
+      <div className="card form-grid">
+        <h3>Delete account</h3>
+        <p className="muted small">
+          Removes your profile, memberships, saved cards and verification
+          checks. Past bookings are kept without your name or email, as payment
+          records. This can’t be undone.
+        </p>
+        {remove.error && (
+          <p className="error" role="alert">
+            {remove.error.message}
+          </p>
+        )}
+        <div className="ticket-actions">
+          <button
+            type="button"
+            className="button danger"
+            disabled={remove.isPending}
+            onClick={() => {
+              if (window.confirm("Delete your Cinego account permanently?"))
+                remove.mutate();
+            }}
+          >
+            {remove.isPending ? "Deleting…" : "Delete my account"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

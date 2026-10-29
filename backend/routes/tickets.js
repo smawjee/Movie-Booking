@@ -3,6 +3,7 @@ const rateLimit = require("express-rate-limit").rateLimit;
 const { z } = require("zod");
 const store = require("../../services/store");
 const tickets = require("../../services/ticketService");
+const { getAuthedUser } = require("../../services/auth");
 const router = express.Router();
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -30,6 +31,20 @@ async function send(req, res) {
     return res.status(400).json({ error: "Enter a valid email address" });
   const booking = await store.getBooking(req.params.reference);
   if (!booking) return res.status(404).json({ error: "Booking not found" });
+  // A booking reference alone only lets you resend to the booking's own
+  // address; any other recipient needs the signed-in owner.
+  const to = parsed.data.to;
+  if (to && to.toLowerCase() !== (booking.email || "").toLowerCase()) {
+    const user = await getAuthedUser(req);
+    const owner =
+      user &&
+      (booking.userId === user.id ||
+        (user.email || "").toLowerCase() === (booking.email || "").toLowerCase());
+    if (!owner)
+      return res.status(403).json({
+        error: "Sign in to the account that made this booking to send it to another address",
+      });
+  }
   try {
     await store.updateDeliveryStatus(req.params.reference, { status: "queued" });
     const result = await tickets.deliver(booking, parsed.data.to);

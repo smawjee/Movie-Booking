@@ -59,6 +59,8 @@ export const account = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  deleteAccount: () =>
+    authed<{ deleted: boolean }>("/api/account", { method: "DELETE" }),
   bookings: () => authed<Booking[]>("/api/account/bookings"),
   cards: () =>
     authed<{ cards: SavedCard[]; defaultId: string | null }>(
@@ -164,7 +166,7 @@ export const api = {
       `/api/tickets/${reference}/data`,
     ),
   resendTicket: (reference: string, to?: string) =>
-    json<{ status: string; previewUrl?: string }>(
+    authed<{ status: string; previewUrl?: string }>(
       `/api/tickets/${encodeURIComponent(reference)}/resend`,
       { method: "POST", body: JSON.stringify(to ? { to } : {}) },
     ),

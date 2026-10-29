@@ -6,7 +6,10 @@ const profiles = require("../../services/profileStore");
 const cards = require("../../services/stripeCustomers");
 const { sendMessage } = require("../../services/ticketService");
 const { getAuthedUser } = require("../../services/auth");
-const { supabaseConfigured } = require("../../services/supabaseClient");
+const {
+  supabase,
+  supabaseConfigured,
+} = require("../../services/supabaseClient");
 const { stripeConfigured } = require("../../services/stripeClient");
 const router = express.Router();
 
@@ -66,6 +69,25 @@ router.put(
       await profiles.updateProfile(req.user.id, parsed.data),
       req.user,
     );
+  }),
+);
+// Deletes the account. Bookings stay as anonymous financial records; the
+// profile, verification checks, memberships, chats and saved cards go.
+router.delete(
+  "/account",
+  handle(async (req) => {
+    const { error } = await supabase.rpc("erase_account_data", {
+      p_user_id: req.user.id,
+      p_email: req.user.email,
+    });
+    if (error) throw error;
+    // Before the auth user goes: the profile row holds the customer id.
+    await cards.deleteCustomer(req.user.id);
+    const { error: authError } = await supabase.auth.admin.deleteUser(
+      req.user.id,
+    );
+    if (authError) throw authError;
+    return { deleted: true };
   }),
 );
 router.get(

@@ -43,6 +43,17 @@ async function existingCustomerId(userId) {
   return data?.stripe_customer_id || null;
 }
 
+// Best effort: an account deletion shouldn't fail because Stripe is down.
+async function deleteCustomer(userId) {
+  const customerId = await existingCustomerId(userId);
+  if (!customerId || !stripeConfigured) return;
+  try {
+    await stripe.customers.del(customerId);
+  } catch (e) {
+    console.warn("deleteCustomer skipped:", e.message);
+  }
+}
+
 // Lets the Payment Element show, save and remove this customer's cards.
 async function customerSessionSecret(customerId) {
   if (!customerId) return undefined;
@@ -135,4 +146,5 @@ module.exports = {
   removeCard,
   setDefaultCard,
   createSetupIntent,
+  deleteCustomer,
 };

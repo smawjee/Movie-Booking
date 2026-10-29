@@ -292,6 +292,7 @@ function mapBookingRow(data) {
       pricePence: bs.price_pence,
     })),
     email: data.guest_email,
+    userId: data.user_id,
     totalPence: data.total_pence,
     payment: payment
       ? {
@@ -307,7 +308,7 @@ function mapBookingRow(data) {
   };
 }
 
-const BOOKING_SELECT = `id, reference, guest_email, total_pence, status,
+const BOOKING_SELECT = `id, reference, user_id, guest_email, total_pence, status,
   screenings ( id, starts_at, base_price_pence, language,
     movies ( title, poster_path, rating, runtime ),
     auditoriums ( screen_number, experience_id, cinemas ( slug ) ) ),
@@ -450,7 +451,7 @@ async function updateDeliveryStatus(reference, result) {
 }
 
 function publicBooking(booking) {
-  const { email, payment, ...rest } = booking;
+  const { email, payment, userId, ...rest } = booking;
   return rest;
 }
 

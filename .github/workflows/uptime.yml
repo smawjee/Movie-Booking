@@ -1,0 +1,15 @@
+name: Uptime
+
+# Calls the live site's database health check every morning. A failed run
+# emails the repository owner, so an outage (such as Supabase pausing the
+# project) is noticed the same day rather than by a visitor.
+on:
+  schedule:
+    - cron: "41 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl --fail --silent --show-error --max-time 30 https://movie-booking-smawjee.vercel.app/api/keepalive
