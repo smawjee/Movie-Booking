@@ -90,6 +90,16 @@ const authCallbackRoute = createRoute({
   path: "/auth/callback",
   component: AuthCallback,
 });
+const privacyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/privacy",
+  component: lazyRouteComponent(() => import("./pages/Legal"), "Privacy"),
+});
+const termsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/terms",
+  component: lazyRouteComponent(() => import("./pages/Legal"), "Terms"),
+});
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moviesRoute,
@@ -102,6 +112,8 @@ const routeTree = rootRoute.addChildren([
   accountRoute,
   authCallbackRoute,
   trailersRoute,
+  privacyRoute,
+  termsRoute,
 ]);
 export const router = createRouter({ routeTree });
 declare module "@tanstack/react-router" {

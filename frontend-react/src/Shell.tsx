@@ -81,6 +81,8 @@ export function Shell() {
             <h3>Your account</h3>
             <Link to="/membership">Cinego+ membership</Link>
             <Link to="/account">Sign in / sign up</Link>
+            <Link to="/privacy">Privacy policy</Link>
+            <Link to="/terms">Terms of service</Link>
           </div>
         </div>
         <div className="footer-bottom">
