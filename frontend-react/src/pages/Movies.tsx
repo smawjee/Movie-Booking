@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Play, SlidersHorizontal } from "lucide-react";
 import { api, money, poster } from "../lib/api";
 import { experiences } from "../lib/experiences";
+import { languageLabel, languageName } from "../lib/language";
 import { useTrailers } from "../lib/hooks";
 import { TrailerModal } from "../components/TrailerModal";
 import { moviesRoute } from "../routes";
@@ -26,7 +27,8 @@ export function Movies() {
     [date, setDate] = useState(new Date().toLocaleDateString("en-CA")),
     [format, setFormat] = useState(""),
     [rating, setRating] = useState(""),
-    [genre, setGenre] = useState("");
+    [genre, setGenre] = useState(""),
+    [language, setLanguage] = useState("");
   const screens = useQuery({
     queryKey: ["screenings", cinema, date, format],
     queryFn: () =>
@@ -45,9 +47,13 @@ export function Movies() {
   const matches = trie.search(title);
   const scheduled = new Set(screens.data?.map((s) => s.movieId));
   const titleMatches = (showing.data || []).filter((m) => matches.has(m.id));
+  const languages = [
+    ...new Set((showing.data || []).map((m) => m.language).filter(Boolean)),
+  ].sort((a, b) => languageName(a).localeCompare(languageName(b)));
   const list = titleMatches.filter(
     (m) =>
       scheduled.has(m.id) &&
+      (!language || m.language === language) &&
       (!rating || m.rating === rating) &&
       (!genre || m.genre_ids.includes(Number(genre))),
   );
@@ -121,6 +127,20 @@ export function Movies() {
           </select>
         </label>
         <label>
+          Language
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+          >
+            <option value="">All languages</option>
+            {languages.map((code) => (
+              <option key={code} value={code}>
+                {languageName(code)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           Rating
           <select value={rating} onChange={(e) => setRating(e.target.value)}>
             <option value="">All ratings</option>
@@ -135,6 +155,7 @@ export function Movies() {
             setTitle("");
             setFormat("");
             setGenre("");
+            setLanguage("");
             setRating("");
           }}
         >
@@ -146,6 +167,7 @@ export function Movies() {
           title,
           format && experiences[format as keyof typeof experiences].name,
           genre && "Genre selected",
+          language && languageName(language),
           rating && `Rated ${rating}`,
         ]
           .filter(Boolean)
@@ -182,7 +204,18 @@ export function Movies() {
               <img src={poster(movie.poster_path)} alt="" />
               <div>
                 <span className="badge">{movie.rating}</span>
+                {languageLabel(movie.language) && (
+                  <span className="badge language-badge">
+                    {languageLabel(movie.language)}
+                  </span>
+                )}
                 <h2>{movie.title}</h2>
+                {movie.original_title &&
+                  movie.original_title !== movie.title && (
+                    <span className="original-title" lang={movie.language}>
+                      {movie.original_title}
+                    </span>
+                  )}
                 {trailerById.has(movie.id) && (
                   <button
                     type="button"

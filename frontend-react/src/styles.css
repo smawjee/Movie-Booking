@@ -3316,3 +3316,15 @@ footer {
   width: min(200px, 100%);
   height: auto;
 }
+
+/* World cinema */
+.language-badge {
+  margin-left: 0.4rem;
+  color: var(--text-2);
+}
+.original-title {
+  display: block;
+  margin: -0.25rem 0 0.5rem;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}

@@ -74,6 +74,58 @@ const demoMovies = [
     language: "en",
     release_date: "2026-09-01",
   },
+  {
+    id: 900007,
+    title: "Monsoon Wedding Express",
+    original_title: "मानसून वेडिंग एक्सप्रेस",
+    overview:
+      "Three families, one overnight train and a wedding that has to happen by sunrise.",
+    poster_path: null,
+    rating: "12A",
+    genre_ids: [35, 10749],
+    runtime: 142,
+    language: "hi",
+    release_date: "2026-09-12",
+  },
+  {
+    id: 900008,
+    title: "The Night Market",
+    original_title: "야시장",
+    overview:
+      "A Seoul street-food vendor is pulled into a heist when a stranger pays with a stolen key.",
+    poster_path: null,
+    rating: "15",
+    genre_ids: [80, 53],
+    runtime: 117,
+    language: "ko",
+    release_date: "2026-09-19",
+  },
+  {
+    id: 900009,
+    title: "Paper Lanterns",
+    original_title: "紙灯籠",
+    overview:
+      "An animated tale of a girl who follows a lantern festival into the world of spirits.",
+    poster_path: null,
+    rating: "PG",
+    genre_ids: [16, 14, 10751],
+    runtime: 101,
+    language: "ja",
+    release_date: "2026-08-30",
+  },
+  {
+    id: 900010,
+    title: "Last Train to Lyon",
+    original_title: "Dernier train pour Lyon",
+    overview:
+      "Two strangers share a delayed train and one long conversation that changes both their lives.",
+    poster_path: null,
+    rating: "12A",
+    genre_ids: [18, 10749],
+    runtime: 98,
+    language: "fr",
+    release_date: "2026-09-05",
+  },
 ];
 
 async function fetchJson(url) {
@@ -103,38 +155,96 @@ async function getCertification(movieId) {
   return "NR";
 }
 
-async function getNowPlaying() {
-  if (!TMDB_API_KEY) return demoMovies;
-  const url = `${BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=1&region=GB`;
-  const data = await fetchJson(url);
+// Films in other languages that UK cinemas commonly programme. TMDB's GB
+// "now playing" list is mostly English, so the most popular recent release
+// in each of these is added to the programme.
+const WORLD_LANGUAGES = ["hi", "pa", "ta", "te", "ko", "ja", "fr", "es"];
+const NOW_PLAYING_TTL_MS = 10 * 60 * 1000;
 
-  const detailedMovies = await Promise.all(
-    data.results.map(async (movie) => {
-      const [certification, details, credits] = await Promise.all([
-        getCertification(movie.id),
-        fetchJson(
-          `${BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`,
-        ),
-        fetchJson(
-          `${BASE_URL}/movie/${movie.id}/credits?api_key=${TMDB_API_KEY}&language=en-US`,
-        ),
-      ]);
+async function describe(movie) {
+  const [certification, details, credits] = await Promise.all([
+    getCertification(movie.id),
+    fetchJson(
+      `${BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`,
+    ),
+    fetchJson(
+      `${BASE_URL}/movie/${movie.id}/credits?api_key=${TMDB_API_KEY}&language=en-US`,
+    ),
+  ]);
+  return {
+    id: movie.id,
+    title: movie.title,
+    original_title: movie.original_title,
+    overview: movie.overview,
+    poster_path: movie.poster_path,
+    rating: certification,
+    genre_ids: movie.genre_ids,
+    runtime: details.runtime,
+    language: details.original_language,
+    cast: credits.cast?.slice(0, 5).map((c) => c.name),
+  };
+}
 
-      return {
-        id: movie.id,
-        title: movie.title,
-        overview: movie.overview,
-        poster_path: movie.poster_path,
-        rating: certification,
-        genre_ids: movie.genre_ids,
-        runtime: details.runtime,
-        language: details.original_language,
-        cast: credits.cast?.slice(0, 5).map((c) => c.name),
-      };
+const isoDay = (offsetDays) =>
+  new Date(Date.now() + offsetDays * 86400000).toISOString().slice(0, 10);
+
+// The most popular film released in the last ~2 months for each language.
+async function worldCinema() {
+  const picks = await Promise.allSettled(
+    WORLD_LANGUAGES.map(async (code) => {
+      const data = await fetchJson(
+        `${BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=en-US` +
+          `&with_original_language=${code}&include_adult=false` +
+          `&primary_release_date.gte=${isoDay(-60)}&primary_release_date.lte=${isoDay(7)}` +
+          `&vote_count.gte=3&sort_by=popularity.desc&page=1`,
+      );
+      return data.results.find((movie) => movie.poster_path) || null;
     }),
   );
+  return picks
+    .filter((pick) => pick.status === "fulfilled" && pick.value)
+    .map((pick) => pick.value);
+}
 
-  return detailedMovies;
+// Two UK releases, then one world film, so the schedule (which only gives
+// showtimes to the first 20 films) always includes the world films.
+function mixProgramme(local, world) {
+  const seen = new Set(local.map((movie) => movie.id));
+  const extra = world.filter((movie) => !seen.has(movie.id));
+  const mixed = [];
+  let i = 0;
+  while (i < local.length || extra.length) {
+    mixed.push(...local.slice(i, i + 2));
+    i += 2;
+    if (extra.length) mixed.push(extra.shift());
+  }
+  return mixed;
+}
+
+let nowPlayingCache = null;
+async function getNowPlaying() {
+  if (!TMDB_API_KEY) return demoMovies;
+  // Every screenings request needs this list; dozens of TMDB calls per
+  // request would be slow and hit rate limits, so it is shared for a while.
+  if (nowPlayingCache && nowPlayingCache.expires > Date.now())
+    return nowPlayingCache.movies;
+  const pending = (async () => {
+    const [local, world] = await Promise.all([
+      fetchJson(
+        `${BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&language=en-US&page=1&region=GB`,
+      ).then((data) => data.results),
+      worldCinema().catch(() => []),
+    ]);
+    return Promise.all(mixProgramme(local, world).map(describe));
+  })();
+  nowPlayingCache = {
+    movies: pending,
+    expires: Date.now() + NOW_PLAYING_TTL_MS,
+  };
+  pending.catch(() => {
+    nowPlayingCache = null;
+  });
+  return pending;
 }
 
 async function getUpcoming() {
@@ -242,6 +352,8 @@ async function getTrailers() {
 }
 
 module.exports = {
+  WORLD_LANGUAGES,
+  mixProgramme,
   getNowPlaying,
   getUpcoming,
   getMovieDetails,
