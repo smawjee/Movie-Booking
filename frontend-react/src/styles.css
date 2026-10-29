@@ -3241,3 +3241,78 @@ footer {
   background: var(--danger-soft);
   border-color: rgba(255, 126, 134, 0.25);
 }
+
+/* Wallet pass preview */
+.wallet-preview {
+  display: grid;
+  gap: 0.75rem;
+  width: min(400px, 100%);
+}
+.wallet-preview .eyebrow {
+  padding-right: 2.5rem;
+}
+.wallet-preview p {
+  margin: 0;
+}
+.wallet-pass {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.25rem;
+  color: #fff;
+  background: #111;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+}
+.wallet-pass.google {
+  border-radius: 1.75rem;
+}
+.wallet-pass small {
+  display: block;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.wallet-pass-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.wallet-pass-head img {
+  height: 26px;
+}
+.wallet-pass-head span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.wallet-pass-film {
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.wallet-pass-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+}
+.wallet-pass-fields span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wallet-pass-qr {
+  display: grid;
+  place-items: center;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fff;
+  border-radius: var(--radius-md);
+  color: #111;
+}
+.wallet-pass-qr img {
+  width: min(200px, 100%);
+  height: auto;
+}

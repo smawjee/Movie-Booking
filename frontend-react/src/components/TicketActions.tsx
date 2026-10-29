@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Download, Mail, Wallet } from "lucide-react";
 import { api, emailSchema } from "../lib/api";
+import { WalletPreview } from "./WalletPreview";
 
 type Delivery = { status: string; previewUrl?: string } | undefined;
 
@@ -19,6 +20,7 @@ export function TicketActions({
 }) {
   const [otherEmail, setOtherEmail] = useState("");
   const [showOther, setShowOther] = useState(false);
+  const [preview, setPreview] = useState<"apple" | "google" | null>(null);
   const download = useMutation({
     mutationFn: () => api.downloadTicket(reference),
   });
@@ -61,23 +63,33 @@ export function TicketActions({
               ? `Email to ${bookingEmail}`
               : "Email ticket"}
         </button>
-        {wallets.data?.apple && (
+        {/* Without wallet credentials the buttons open a preview of the pass. */}
+        {wallets.data?.apple ? (
           <a className="button secondary" href={api.appleWalletUrl(reference)}>
             <Wallet size={16} aria-hidden="true" />
             Add to Apple Wallet
           </a>
-        )}
-        {wallets.data?.google && (
+        ) : (
           <button
             type="button"
             className="button secondary"
-            disabled={googleWallet.isPending}
-            onClick={() => googleWallet.mutate()}
+            onClick={() => setPreview("apple")}
           >
             <Wallet size={16} aria-hidden="true" />
-            {googleWallet.isPending ? "Opening…" : "Add to Google Wallet"}
+            Add to Apple Wallet
           </button>
         )}
+        <button
+          type="button"
+          className="button secondary"
+          disabled={googleWallet.isPending}
+          onClick={() =>
+            wallets.data?.google ? googleWallet.mutate() : setPreview("google")
+          }
+        >
+          <Wallet size={16} aria-hidden="true" />
+          {googleWallet.isPending ? "Opening…" : "Add to Google Wallet"}
+        </button>
         <button
           type="button"
           className="text-button"
@@ -133,6 +145,13 @@ export function TicketActions({
             </a>
           )}
         </p>
+      )}
+      {preview && (
+        <WalletPreview
+          reference={reference}
+          wallet={preview}
+          onClose={() => setPreview(null)}
+        />
       )}
     </div>
   );
