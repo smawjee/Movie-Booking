@@ -293,6 +293,7 @@ function mapBookingRow(data) {
     })),
     email: data.guest_email,
     userId: data.user_id,
+    createdAt: data.created_at,
     totalPence: data.total_pence,
     payment: payment
       ? {
@@ -308,7 +309,7 @@ function mapBookingRow(data) {
   };
 }
 
-const BOOKING_SELECT = `id, reference, user_id, guest_email, total_pence, status,
+const BOOKING_SELECT = `id, reference, user_id, guest_email, created_at, total_pence, status,
   screenings ( id, starts_at, base_price_pence, language,
     movies ( title, poster_path, rating, runtime ),
     auditoriums ( screen_number, experience_id, cinemas ( slug ) ) ),
@@ -332,7 +333,7 @@ async function listBookingsForUser(userId, email) {
   const query = (column, value) =>
     supabase
       .from("bookings")
-      .select(`created_at, ${BOOKING_SELECT}`)
+      .select(BOOKING_SELECT)
       .eq(column, value)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -347,7 +348,7 @@ async function listBookingsForUser(userId, email) {
   }
   return [...rows.values()]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map((row) => ({ ...mapBookingRow(row), createdAt: row.created_at }));
+    .map(mapBookingRow);
 }
 
 // Seats and screening facts the pricing rules need, read straight from the

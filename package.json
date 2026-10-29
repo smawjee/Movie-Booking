@@ -11,7 +11,7 @@
     "format:check": "prettier --check \"frontend/**/*.{js,css,html}\" \"frontend-react/**/*.{ts,tsx,css,html,json}\" \"backend/**/*.js\" \"services/**/*.js\" package.json README.md",
     "typecheck": "tsc -p frontend-react/tsconfig.json",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run build && node --check backend/index.js && node --check backend/routes/movies.js && node --check backend/routes/cinema.js && node --check backend/routes/tickets.js && node --check backend/routes/assistant.js && node --check backend/routes/stripeWebhook.js"
+    "check": "npm run typecheck && npm run build && node --check backend/index.js && node --check backend/routes/movies.js && node --check backend/routes/cinema.js && node --check backend/routes/tickets.js && node --check backend/routes/assistant.js && node --check backend/routes/stripeWebhook.js && node --check backend/routes/admin.js"
   },
   "keywords": [],
   "author": "",
@@ -26,11 +26,13 @@
     "@tanstack/react-router": "^1.170.35",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
+    "do-not-zip": "1.0.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.7.0",
     "lucide-react": "^1.47.0",
     "node-fetch": "^2.7.0",
+    "node-forge": "1.4.2",
     "nodemailer": "^10.0.3",
     "openai": "^7.15.0",
     "pdfkit": "^0.20.2",

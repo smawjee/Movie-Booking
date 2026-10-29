@@ -378,6 +378,22 @@ function transporter() {
   });
 }
 
+// Gmail and most SMTP services only send as the signed-in mailbox, and
+// rewrite (or spam-flag) any other From address. So the address is the SMTP
+// login whenever that is an email address; TICKET_FROM_NAME (or the name in
+// TICKET_FROM_EMAIL) only sets the display name, e.g. "Cinego Tickets".
+function sender() {
+  const configured = process.env.TICKET_FROM_EMAIL || "";
+  const [, configuredName, configuredAddress] =
+    configured.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/) || [];
+  const user = process.env.SMTP_USER || "";
+  return {
+    name:
+      process.env.TICKET_FROM_NAME || configuredName || "Cinego Tickets",
+    address: user.includes("@") ? user : configuredAddress || configured,
+  };
+}
+
 async function deliver(booking, to = booking.email) {
   const mail = transporter();
   const content = await html(booking, Boolean(mail));
@@ -396,7 +412,7 @@ async function deliver(booking, to = booking.email) {
     QRCode.toBuffer(token(booking), { width: 320, margin: 4 }),
   ]);
   const result = await mail.sendMail({
-    from: process.env.TICKET_FROM_EMAIL || process.env.SMTP_USER,
+    from: sender(),
     to,
     subject: `Your Cinego ticket: ${booking.screening.movieTitle}`,
     html: content,
@@ -434,7 +450,7 @@ async function sendMessage({ to, subject, text, html }) {
     return { status: "preview", previewUrl: `/api/ticket-previews/${id}` };
   }
   const result = await mail.sendMail({
-    from: process.env.TICKET_FROM_EMAIL || process.env.SMTP_USER,
+    from: sender(),
     to,
     subject,
     text,
@@ -456,6 +472,9 @@ function getPreview(id) {
 
 module.exports = {
   deliver,
+  sender,
+  token,
+  cinemaNames,
   sendMessage,
   getPreview,
   pdf,

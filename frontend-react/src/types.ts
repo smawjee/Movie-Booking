@@ -80,6 +80,7 @@ export interface Membership {
 export type VerificationStatus = "none" | "pending" | "verified" | "rejected";
 export interface Profile {
   email: string | null;
+  isAdmin: boolean;
   fullName: string | null;
   dateOfBirth: string | null;
   age: number | null;
@@ -156,4 +157,47 @@ export interface BookingDraft {
   screening?: Screening;
   ticketCount: number;
   createdBy: "assistant" | "user";
+}
+
+export interface AdminPeriod {
+  bookings: number;
+  tickets: number;
+  revenuePence: number;
+}
+export interface AdminOverview {
+  today: AdminPeriod;
+  week: AdminPeriod;
+  month: AdminPeriod;
+  activeMemberships: number;
+  accounts: number;
+  emails: Record<string, number>;
+  daily: { date: string; bookings: number; revenuePence: number }[];
+  topFilms: { title: string; tickets: number }[];
+}
+export interface AdminBooking {
+  reference: string;
+  email: string | null;
+  totalPence: number;
+  status: string;
+  createdAt: string;
+  film: string;
+  cinema: string;
+  screen: number;
+  format: string;
+  date: string;
+  time: string;
+  seats: string[];
+  emailStatus: string | null;
+}
+export interface TicketCheck {
+  valid: boolean;
+  reason?: string;
+  reference?: string;
+  film?: string;
+  cinema?: string;
+  screen?: number;
+  date?: string;
+  time?: string;
+  rating?: string;
+  seats?: string[];
 }

@@ -100,6 +100,11 @@ const termsRoute = createRoute({
   path: "/terms",
   component: lazyRouteComponent(() => import("./pages/Legal"), "Terms"),
 });
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  component: lazyRouteComponent(() => import("./pages/Admin"), "Admin"),
+});
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moviesRoute,
@@ -114,6 +119,7 @@ const routeTree = rootRoute.addChildren([
   trailersRoute,
   privacyRoute,
   termsRoute,
+  adminRoute,
 ]);
 export const router = createRouter({ routeTree });
 declare module "@tanstack/react-router" {

@@ -16,7 +16,10 @@ Stripe test mode (card `4242 4242 4242 4242`, any future date, any CVC).
   member and student discounts and free member tickets
 - Accounts with email/password or Google sign-in (Supabase Auth), ticket
   history and account deletion
-- PDF tickets with signed QR codes, emailed over SMTP
+- PDF tickets with signed QR codes, emailed from Cinego over SMTP, and
+  Add to Apple Wallet / Google Wallet passes
+- Admin dashboard: revenue and ticket sales, bookings search with ticket
+  resend, and a door check that validates ticket QR codes
 - Cinebot, an OpenAI assistant grounded in the real programme
 
 ## Architecture
@@ -82,10 +85,28 @@ For frontend hot reload, also run `npm run dev` and open the Vite address.
 4. **Stripe:** add test-mode keys, and point a webhook at
    `/api/stripe/webhook` for `payment_intent.succeeded`.
 5. **TMDB / OpenAI:** add the API keys for live films and the AI assistant.
-6. **Email:** for Gmail, create an
+6. **Email:** create a dedicated Gmail account for the app (e.g. a
+   "Cinego Tickets" mailbox), turn on 2-Step Verification, create an
    [app password](https://support.google.com/accounts/answer/185833) and set
-   `SMTP_USER` and `SMTP_PASS`. Without it, tickets render as previews and
-   are never reported as sent.
+   `SMTP_USER` and `SMTP_PASS`. Gmail only sends as the signed-in mailbox, so
+   tickets come from that address with the display name `TICKET_FROM_NAME`
+   (default "Cinego Tickets"). Without SMTP, tickets render as previews and
+   are never reported as sent. Right after booking a ticket can be emailed
+   to any address; later, only the signed-in owner can send it elsewhere.
+7. **Google Wallet:** in the
+   [Google Pay & Wallet Console](https://pay.google.com/business/console)
+   create an issuer, enable the Google Wallet API in Google Cloud, create a
+   service account with a JSON key and add its email as a user in the
+   console. Set `GOOGLE_WALLET_ISSUER_ID` and paste the whole JSON key into
+   `GOOGLE_WALLET_SERVICE_ACCOUNT`.
+8. **Apple Wallet:** needs a paid Apple Developer account. Create a Pass Type
+   ID and its certificate, then set `APPLE_WALLET_PASS_TYPE_ID`,
+   `APPLE_WALLET_TEAM_ID`, `APPLE_WALLET_CERT` and `APPLE_WALLET_KEY` (PEM),
+   and `APPLE_WALLET_WWDR_CERT` (Apple's WWDR G4 certificate as PEM). Each
+   wallet button appears only once its settings are present.
+9. **Admins:** set `app_metadata.role` to `"admin"` on a Supabase user (only
+   the service role can), or list emails in `ADMIN_EMAILS`. Admins get an
+   Admin link in the header that opens `/admin`.
 
 Restart the server after changing `.env`. `GET /api/health` shows which
 integrations are live.

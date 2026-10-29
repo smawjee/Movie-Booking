@@ -4,7 +4,9 @@ const { z } = require("zod");
 const store = require("../../services/store");
 const tickets = require("../../services/ticketService");
 const { getAuthedUser } = require("../../services/auth");
+const wallet = require("../../services/walletService");
 const router = express.Router();
+const NEW_BOOKING_WINDOW_MS = 60 * 60 * 1000;
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   limit: 5,
@@ -31,15 +33,17 @@ async function send(req, res) {
     return res.status(400).json({ error: "Enter a valid email address" });
   const booking = await store.getBooking(req.params.reference);
   if (!booking) return res.status(404).json({ error: "Booking not found" });
-  // A booking reference alone only lets you resend to the booking's own
-  // address; any other recipient needs the signed-in owner.
+  // Right after booking (the confirmation page) a ticket can go to any
+  // address, e.g. a friend's. After that only the signed-in owner can send it
+  // somewhere new, so a leaked reference can't be used to spam people.
   const to = parsed.data.to;
-  if (to && to.toLowerCase() !== (booking.email || "").toLowerCase()) {
+  const sameAddress = (a, b) => (a || "").toLowerCase() === (b || "").toLowerCase();
+  const justBooked =
+    Date.now() - new Date(booking.createdAt).valueOf() < NEW_BOOKING_WINDOW_MS;
+  if (to && !sameAddress(to, booking.email) && !justBooked) {
     const user = await getAuthedUser(req);
     const owner =
-      user &&
-      (booking.userId === user.id ||
-        (user.email || "").toLowerCase() === (booking.email || "").toLowerCase());
+      user && (booking.userId === user.id || sameAddress(user.email, booking.email));
     if (!owner)
       return res.status(403).json({
         error: "Sign in to the account that made this booking to send it to another address",
@@ -88,6 +92,40 @@ router.get("/tickets/:reference/download", readLimiter, async (req, res) => {
   } catch (error) {
     console.error("[ticket pdf]", error.message);
     res.status(500).json({ error: "Could not generate the PDF ticket" });
+  }
+});
+// Which "Add to wallet" buttons to show.
+router.get("/wallets", (req, res) => res.json(wallet.configured()));
+router.get("/tickets/:reference/apple-wallet", readLimiter, async (req, res) => {
+  if (!wallet.configured().apple)
+    return res.status(503).json({ error: "Apple Wallet is not set up yet" });
+  try {
+    const booking = await store.getBooking(req.params.reference);
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="cinego-${booking.reference}.pkpass"`,
+    );
+    res.setHeader("Cache-Control", "private, no-store");
+    res.type("application/vnd.apple.pkpass").send(wallet.applePass(booking));
+  } catch (error) {
+    console.error("[apple wallet]", error.message);
+    res.status(500).json({ error: "Could not create the Apple Wallet pass" });
+  }
+});
+router.get("/tickets/:reference/google-wallet", readLimiter, async (req, res) => {
+  if (!wallet.configured().google)
+    return res.status(503).json({ error: "Google Wallet is not set up yet" });
+  try {
+    const booking = await store.getBooking(req.params.reference);
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+    const origin =
+      process.env.PUBLIC_SITE_URL ||
+      `${req.get("x-forwarded-proto") || req.protocol}://${req.get("host")}`;
+    res.json({ url: await wallet.googleSaveUrl(booking, origin) });
+  } catch (error) {
+    console.error("[google wallet]", error.message);
+    res.status(502).json({ error: "Could not add the ticket to Google Wallet" });
   }
 });
 router.get("/tickets/verify/:token", async (req, res) => {

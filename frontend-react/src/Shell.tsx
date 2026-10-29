@@ -4,10 +4,13 @@ import { CircleUserRound, Menu, X } from "lucide-react";
 import { ChatAssistant } from "./components/ChatAssistant";
 import { OffersBanner } from "./components/OffersBanner";
 import { SearchSuggest } from "./components/SearchSuggest";
+import { useProfile, useSession } from "./lib/hooks";
 
 export function Shell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const session = useSession();
+  const isAdmin = useProfile(Boolean(session)).data?.isAdmin;
   useEffect(() => setMenuOpen(false), [pathname]);
   useEffect(() => {
     if (!menuOpen) return;
@@ -45,6 +48,7 @@ export function Shell() {
           <Link to="/premium">Premium screens</Link>
           <Link to="/food">Food & drinks</Link>
           <Link to="/membership">Membership</Link>
+          {isAdmin && <Link to="/admin">Admin</Link>}
           <Link to="/account" className="nav-account-text">
             Account
           </Link>

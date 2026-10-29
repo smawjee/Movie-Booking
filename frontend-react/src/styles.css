@@ -3113,3 +3113,131 @@ footer {
     display: none;
   }
 }
+
+/* Admin dashboard */
+.admin-page .card {
+  padding: clamp(1rem, 0.8rem + 0.8vw, 1.5rem);
+}
+.admin-page .admin-table-wrap {
+  padding: 0;
+}
+.admin-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+.admin-grid h2 {
+  margin: 0 0 1rem;
+  font-size: var(--text-lg);
+}
+.admin-stats {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+.admin-stat {
+  display: grid;
+  gap: 0.25rem;
+}
+.admin-stat small,
+.admin-stat span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.admin-stat strong {
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+.admin-chart {
+  grid-column: 1 / -1;
+}
+.admin-bars {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 0.35rem;
+  height: 160px;
+}
+.admin-bar {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  gap: 0.35rem;
+  min-width: 0;
+  text-align: center;
+}
+.admin-bar span {
+  display: block;
+  min-height: 2px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+.admin-bar small {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.admin-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.admin-table-wrap {
+  overflow-x: auto;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.admin-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+.admin-table td small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  width: fit-content;
+}
+.admin-check.valid {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+.admin-check.invalid {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+.admin-check p {
+  margin: 0.4rem 0 0;
+}
+.status-pill.sent {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: rgba(74, 222, 128, 0.25);
+}
+.status-pill.preview,
+.status-pill.queued {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: rgba(245, 166, 35, 0.25);
+}
+.status-pill.failed {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(255, 126, 134, 0.25);
+}

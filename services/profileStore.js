@@ -148,6 +148,7 @@ function publicProfile(profile, user) {
   const age = profile.date_of_birth ? ageOn(profile.date_of_birth) : null;
   return {
     email: user?.email || null,
+    isAdmin: Boolean(user?.isAdmin),
     fullName: profile.full_name,
     dateOfBirth: profile.date_of_birth,
     age,

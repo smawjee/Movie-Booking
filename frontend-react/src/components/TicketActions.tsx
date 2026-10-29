@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Download, Mail } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Download, Mail, Wallet } from "lucide-react";
 import { api, emailSchema } from "../lib/api";
 
 type Delivery = { status: string; previewUrl?: string } | undefined;
@@ -21,6 +21,15 @@ export function TicketActions({
   const [showOther, setShowOther] = useState(false);
   const download = useMutation({
     mutationFn: () => api.downloadTicket(reference),
+  });
+  const wallets = useQuery({
+    queryKey: ["wallets"],
+    queryFn: api.wallets,
+    staleTime: Infinity,
+  });
+  const googleWallet = useMutation({
+    mutationFn: () => api.googleWalletUrl(reference),
+    onSuccess: ({ url }) => window.location.assign(url),
   });
   const send = useMutation({
     mutationFn: (to?: string) => api.resendTicket(reference, to),
@@ -52,6 +61,23 @@ export function TicketActions({
               ? `Email to ${bookingEmail}`
               : "Email ticket"}
         </button>
+        {wallets.data?.apple && (
+          <a className="button secondary" href={api.appleWalletUrl(reference)}>
+            <Wallet size={16} aria-hidden="true" />
+            Add to Apple Wallet
+          </a>
+        )}
+        {wallets.data?.google && (
+          <button
+            type="button"
+            className="button secondary"
+            disabled={googleWallet.isPending}
+            onClick={() => googleWallet.mutate()}
+          >
+            <Wallet size={16} aria-hidden="true" />
+            {googleWallet.isPending ? "Opening…" : "Add to Google Wallet"}
+          </button>
+        )}
         <button
           type="button"
           className="text-button"
@@ -87,9 +113,9 @@ export function TicketActions({
           </button>
         </form>
       )}
-      {(send.error || download.error) && (
+      {(send.error || download.error || googleWallet.error) && (
         <p className="error" role="alert">
-          {(send.error || download.error)?.message}
+          {(send.error || download.error || googleWallet.error)?.message}
         </p>
       )}
       {send.isSuccess && delivery?.status === "sent" && (

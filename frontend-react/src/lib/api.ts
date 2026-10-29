@@ -12,6 +12,9 @@ import type {
   Screening,
   Trailer,
   DocumentMeta,
+  AdminBooking,
+  AdminOverview,
+  TicketCheck,
 } from "../types";
 import { supabase } from "./supabase";
 export class ApiError extends Error {
@@ -97,6 +100,17 @@ export const account = {
       post(body),
     ),
 };
+export const admin = {
+  overview: () => authed<AdminOverview>("/api/admin/overview"),
+  bookings: (q: string) =>
+    authed<AdminBooking[]>(`/api/admin/bookings?q=${encodeURIComponent(q)}`),
+  resend: (reference: string) =>
+    authed<{ status: string }>(
+      `/api/admin/bookings/${encodeURIComponent(reference)}/resend`,
+      post(),
+    ),
+  verify: (code: string) => authed<TicketCheck>("/api/admin/verify", post({ code })),
+};
 export const api = {
   booking: (reference: string) =>
     json<Booking>(`/api/bookings/${encodeURIComponent(reference)}`),
@@ -169,6 +183,13 @@ export const api = {
     authed<{ status: string; previewUrl?: string }>(
       `/api/tickets/${encodeURIComponent(reference)}/resend`,
       { method: "POST", body: JSON.stringify(to ? { to } : {}) },
+    ),
+  wallets: () => json<{ apple: boolean; google: boolean }>("/api/wallets"),
+  appleWalletUrl: (reference: string) =>
+    `/api/tickets/${encodeURIComponent(reference)}/apple-wallet`,
+  googleWalletUrl: (reference: string) =>
+    json<{ url: string }>(
+      `/api/tickets/${encodeURIComponent(reference)}/google-wallet`,
     ),
   membershipPlans: () => json<MembershipPlan[]>("/api/memberships/plans"),
   membershipPaymentIntent: async (plan: string, promoCode?: string) =>

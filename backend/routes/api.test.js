@@ -167,8 +167,17 @@ describe("bookings and tickets", () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("preview");
   });
-  it("won't send a ticket to another address without the signed-in owner", async () => {
+  it("sends a just-made booking to any address", async () => {
     const booking = book();
+    const res = await call(`/api/tickets/${booking.reference}/resend`, {
+      method: "POST",
+      body: { to: "friend@example.com" },
+    });
+    expect(res.status).toBe(200);
+  });
+  it("won't send an older booking to another address without the signed-in owner", async () => {
+    const booking = book();
+    booking.createdAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const res = await call(`/api/tickets/${booking.reference}/resend`, {
       method: "POST",
       body: { to: "someone-else@example.com" },
@@ -181,6 +190,22 @@ describe("accounts", () => {
   it("are unavailable without Supabase", async () => {
     expect((await call("/api/account/profile")).status).toBe(503);
     expect((await call("/api/account", { method: "DELETE" })).status).toBe(503);
+  });
+  it("keeps the admin area closed without Supabase", async () => {
+    expect((await call("/api/admin/overview")).status).toBe(503);
+  });
+  it("only treats app_metadata or ADMIN_EMAILS as admin", () => {
+    const { isAdmin } = require("../../services/auth");
+    expect(isAdmin({ email: "a@x.com", app_metadata: { role: "admin" } })).toBe(
+      true,
+    );
+    expect(
+      isAdmin({ email: "a@x.com", user_metadata: { role: "admin" } }),
+    ).toBe(false);
+    process.env.ADMIN_EMAILS = "Boss@Cinego.test, other@x.com";
+    expect(isAdmin({ email: "boss@cinego.test" })).toBe(true);
+    expect(isAdmin({ email: "guest@x.com" })).toBe(false);
+    process.env.ADMIN_EMAILS = "";
   });
   it("answers unknown API paths in JSON", async () => {
     const res = await call("/api/does-not-exist");
