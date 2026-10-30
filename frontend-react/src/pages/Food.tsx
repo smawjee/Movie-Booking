@@ -111,22 +111,24 @@ export function Food() {
           </article>
         ))}
       </div>
-      <div className="basket-bar card">
-        <div>
-          <span>Your food order</span>
-          <strong>
-            {Object.values(basket).reduce((a, b) => a + b, 0)} items ·{" "}
-            {discount > 0 && subtotal > 0 && <s>{money(subtotal)}</s>}{" "}
-            {money(basketTotal)}
-          </strong>
-          {discount > 0 && (
-            <small>{discount}% member discount on food</small>
-          )}
+      {Object.values(basket).some(Boolean) && (
+        <div className="basket-bar card">
+          <div>
+            <span>Your food order</span>
+            <strong>
+              {Object.values(basket).reduce((a, b) => a + b, 0)} items ·{" "}
+              {discount > 0 && subtotal > 0 && <s>{money(subtotal)}</s>}{" "}
+              {money(basketTotal)}
+            </strong>
+            {discount > 0 && (
+              <small>{discount}% member discount on food</small>
+            )}
+          </div>
+          <Link className="button" to="/movies" search={{}}>
+            Add to a booking
+          </Link>
         </div>
-        <Link className="button" to="/movies" search={{}}>
-          Add to a booking
-        </Link>
-      </div>
+      )}
     </section>
   );
 }

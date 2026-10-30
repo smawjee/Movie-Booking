@@ -79,7 +79,12 @@ export function Membership() {
                 className={`plan card${plan.style ? ` ${plan.style}` : ""}`}
                 key={plan.id}
               >
-                {plan.tag && <span className="plan-tag">{plan.tag}</span>}
+                <span
+                  className={`plan-tag${plan.tag ? "" : " placeholder"}`}
+                  aria-hidden={!plan.tag}
+                >
+                  {plan.tag || "Plan"}
+                </span>
                 <h2>{plan.name}</h2>
                 <strong>
                   {money(plan.pricePence)} <small>/ month</small>
@@ -89,7 +94,17 @@ export function Membership() {
                     <li key={perk}>{perk}</li>
                   ))}
                 </ul>
-                {plan.requiresStudent && signedIn && !isStudent ? (
+                {plan.requiresStudent && (
+                  <small className="muted">
+                    Verified students only. Not a member? Verified students
+                    still get 25% off every ticket.
+                  </small>
+                )}
+                {!signedIn ? (
+                  <Link to="/account" className="button">
+                    Sign in to join
+                  </Link>
+                ) : plan.requiresStudent && !isStudent ? (
                   <Link
                     to="/account"
                     search={{ tab: "verification" }}
@@ -100,23 +115,15 @@ export function Membership() {
                 ) : (
                   <button
                     className="button"
-                    disabled={!signedIn || isCurrent}
+                    disabled={isCurrent}
                     onClick={() => setChosen(plan)}
                   >
-                    {!signedIn
-                      ? "Sign in to join"
-                      : isCurrent
-                        ? "Current plan"
-                        : mine.data
-                          ? `Switch to ${plan.name}`
-                          : `Choose ${plan.name}`}
+                    {isCurrent
+                      ? "Current plan"
+                      : mine.data
+                        ? `Switch to ${plan.name}`
+                        : `Choose ${plan.name}`}
                   </button>
-                )}
-                {plan.requiresStudent && (
-                  <small className="muted">
-                    Verified students only. Not a member? Verified students
-                    still get 25% off every ticket.
-                  </small>
                 )}
               </article>
             );

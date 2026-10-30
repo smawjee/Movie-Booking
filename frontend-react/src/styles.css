@@ -1083,6 +1083,10 @@ main {
 .plan .button {
   margin-top: auto;
 }
+/* Plans without a tag keep the space, so names and prices line up. */
+.plan-tag.placeholder {
+  visibility: hidden;
+}
 .plan-tag {
   align-self: flex-start;
   padding: 0.25rem 0.65rem;
@@ -2422,7 +2426,8 @@ footer {
     margin: auto;
   }
   .footer-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem 1rem;
   }
   .footer-bottom {
     flex-direction: column;
@@ -4618,5 +4623,17 @@ footer {
   }
   .featured-copy p {
     font-size: var(--text-sm);
+  }
+}
+
+/* Six formats read better as two rows of three than 4 + 2. */
+@media (min-width: 1101px) {
+  .experience-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .plan-tag.placeholder {
+    display: none;
   }
 }
