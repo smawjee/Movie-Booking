@@ -1,8 +1,16 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { BadgeCheck } from "lucide-react";
-import { ApiError, api, money, showDate } from "../lib/api";
+import {
+  Armchair,
+  BadgeCheck,
+  CalendarDays,
+  Clock,
+  MapPin,
+  X,
+} from "lucide-react";
+import { ApiError, api, money, poster, showDate } from "../lib/api";
+import { useCinemaLookup } from "../components/CinemaSelect";
 import {
   useProfile,
   useReservationPaymentIntent,
@@ -48,6 +56,7 @@ export function Booking() {
     setCheckout(false),
   );
   const session = useSession();
+  const cinemaName = useCinemaLookup();
   const profile = useProfile(Boolean(session));
   useEffect(() => {
     if (session?.user.email) setEmail((current) => current || session.user.email!);
@@ -155,53 +164,131 @@ export function Booking() {
         )}
       </section>
     );
+  const toggle = (seat: Seat) =>
+    setSelected((v) =>
+      v.some((x) => x.id === seat.id)
+        ? v.filter((x) => x.id !== seat.id)
+        : [...v, seat],
+    );
+  const rows = [
+    ...(seatsQuery.data?.seats || []).reduce(
+      (map, seat) => map.set(seat.row, [...(map.get(seat.row) || []), seat]),
+      new Map<string, Seat[]>(),
+    ),
+  ];
+  const s = detail.data;
   return (
-    <section className="section">
-      <span className="eyebrow">{detail.data.experience.name}</span>
-      <h1>
-        {detail.data.movieTitle} · {detail.data.time}
-      </h1>
-      {detail.data.experience.warning && (
-        <p className="warning">{detail.data.experience.warning}</p>
+    <section className="section booking-page">
+      <header className="booking-head">
+        <img src={poster(s.posterPath, 185)} alt="" />
+        <div>
+          <span className="eyebrow">{s.experience.name}</span>
+          <h1>{s.movieTitle}</h1>
+          <ul className="booking-chips">
+            <li>
+              <CalendarDays size={14} aria-hidden="true" /> {showDate(s.date)}
+            </li>
+            <li>
+              <Clock size={14} aria-hidden="true" /> {s.time}
+            </li>
+            <li>
+              <MapPin size={14} aria-hidden="true" />{" "}
+              {cinemaName(s.cinema)?.city || s.cinema} · Screen {s.screen}
+            </li>
+            <li className="badge">{s.rating}</li>
+          </ul>
+        </div>
+      </header>
+      {s.experience.warning && (
+        <p className="warning">{s.experience.warning}</p>
       )}
       <div className="booking-grid">
         <div className="seat-card card">
-          <div className="screen">SCREEN</div>
-          <div className="seats">
-            {seatsQuery.data?.seats.map((seat) => (
-              <button
-                key={seat.id}
-                disabled={
-                  !seat.available ||
-                  (selected.length >= MAX_SEATS &&
-                    !selected.some((x) => x.id === seat.id))
-                }
-                className={`${seat.tier} ${selected.some((x) => x.id === seat.id) ? "selected" : ""}`}
-                onClick={() =>
-                  setSelected((v) =>
-                    v.some((x) => x.id === seat.id)
-                      ? v.filter((x) => x.id !== seat.id)
-                      : [...v, seat],
-                  )
-                }
-              >
-                {seat.row}
-                {seat.number}
-              </button>
+          <div className="screen" aria-hidden="true">
+            Screen
+          </div>
+          <div className="seats" role="group" aria-label="Seat map">
+            {rows.map(([row, seats]) => (
+              <div className="seat-row" key={row}>
+                <span className="row-label">{row}</span>
+                {seats.map((seat, i) => {
+                  const isSelected = selected.some((x) => x.id === seat.id);
+                  // Aisles split a 12-seat row 4-4-4 and an 8-seat row 4-4.
+                  const aisle = i > 0 && i % 4 === 0;
+                  return (
+                    <Fragment key={seat.id}>
+                      {aisle && <span className="aisle" />}
+                      <button
+                        type="button"
+                        disabled={
+                          !seat.available ||
+                          (selected.length >= MAX_SEATS && !isSelected)
+                        }
+                        aria-pressed={isSelected}
+                        aria-label={`Seat ${seat.row}${seat.number}, ${seat.tier}, ${money(seat.pricePence)}${seat.available ? "" : ", taken"}`}
+                        className={`${seat.tier}${isSelected ? " selected" : ""}`}
+                        onClick={() => toggle(seat)}
+                      >
+                        {seat.number}
+                      </button>
+                    </Fragment>
+                  );
+                })}
+                <span className="row-label">{row}</span>
+              </div>
             ))}
           </div>
+          <ul className="seat-key">
+            <li>
+              <i className="seat-dot" /> Standard
+            </li>
+            <li>
+              <i className="seat-dot premium" /> Premium +£2.50
+            </li>
+            <li>
+              <i className="seat-dot selected" /> Your seats
+            </li>
+            <li>
+              <i className="seat-dot unavailable" /> Taken
+            </li>
+          </ul>
         </div>
         <aside className="summary card">
           <h2>Your seats</h2>
-          <p>
-            {selected.map((s) => `${s.row}${s.number}`).join(", ") ||
-              "Choose seats from the map."}
-          </p>
-          <strong>{money(total)}</strong>
-          {selected.length >= MAX_SEATS && (
-            <p className="muted small">
-              Up to {MAX_SEATS} seats per booking.
+          {selected.length ? (
+            <ul className="seat-chips">
+              {selected.map((seat) => (
+                <li key={seat.id}>
+                  <button
+                    type="button"
+                    className={seat.tier}
+                    onClick={() => toggle(seat)}
+                    aria-label={`Remove seat ${seat.row}${seat.number}`}
+                  >
+                    <strong>
+                      {seat.row}
+                      {seat.number}
+                    </strong>
+                    <small>{money(seat.pricePence)}</small>
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="summary-empty">
+              <Armchair size={18} aria-hidden="true" /> Tap seats on the map to
+              add them.
             </p>
+          )}
+          <div className="summary-total">
+            <span>
+              {selected.length} {selected.length === 1 ? "ticket" : "tickets"}
+            </span>
+            <strong>{money(total)}</strong>
+          </div>
+          {selected.length >= MAX_SEATS && (
+            <p className="muted small">Up to {MAX_SEATS} seats per booking.</p>
           )}
           <label>
             Email for tickets

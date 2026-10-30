@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { api, money, showDate } from "../lib/api";
 import { confirmationRoute } from "../routes";
 import { TicketActions } from "../components/TicketActions";
+import { useCinemaLookup } from "../components/CinemaSelect";
 
 export function Confirmation() {
   const { reference } = confirmationRoute.useSearch();
@@ -18,6 +19,7 @@ export function Confirmation() {
     enabled: Boolean(booking.data),
   });
   const delivery = booking.data?.emailDelivery;
+  const cinema = useCinemaLookup();
   return (
     <section className="section narrow">
       {booking.data ? (
@@ -29,16 +31,39 @@ export function Confirmation() {
             Booking confirmed · {booking.data.reference}
           </span>
           <h1>{booking.data.screening.movieTitle}</h1>
-          <p>
-            {showDate(booking.data.screening.date)} · {booking.data.screening.time} ·{" "}
-            {booking.data.screening.experience.name}
-          </p>
-          <p>
-            Seats{" "}
-            {booking.data.seats.map((s) => `${s.row}${s.number}`).join(", ")}
-          </p>
-          <strong>{money(booking.data.totalPence)}</strong>
-          <p>
+          <dl className="ticket-facts">
+            <div>
+              <dt>Date</dt>
+              <dd>{showDate(booking.data.screening.date)}</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd>{booking.data.screening.time}</dd>
+            </div>
+            <div>
+              <dt>Cinema</dt>
+              <dd>
+                {cinema(booking.data.screening.cinema)?.city ||
+                  booking.data.screening.cinema}{" "}
+                · Screen {booking.data.screening.screen}
+              </dd>
+            </div>
+            <div>
+              <dt>Format</dt>
+              <dd>{booking.data.screening.experience.name}</dd>
+            </div>
+            <div>
+              <dt>{booking.data.seats.length === 1 ? "Seat" : "Seats"}</dt>
+              <dd>
+                {booking.data.seats.map((s) => `${s.row}${s.number}`).join(", ")}
+              </dd>
+            </div>
+            <div>
+              <dt>Paid</dt>
+              <dd>{money(booking.data.totalPence)}</dd>
+            </div>
+          </dl>
+          <p className="ticket-delivery">
             {delivery?.status === "sent"
               ? "Ticket email sent to your booking email address."
               : delivery?.status === "preview"
