@@ -709,7 +709,7 @@ main {
     box-shadow var(--duration-base) var(--ease-out),
     border-color var(--duration-base) var(--ease-out);
 }
-.screening > img {
+.screening > a > img {
   width: 170px;
   height: 245px;
   object-fit: cover;
@@ -2045,7 +2045,7 @@ footer {
 .movie h3 {
   transition: color var(--duration-fast) var(--ease-out);
 }
-.screening > img {
+.screening > a > img {
   transition: transform 500ms var(--ease-out);
 }
 .time strong {
@@ -2195,7 +2195,7 @@ footer {
   .screening {
     grid-template-columns: 90px 1fr;
   }
-  .screening > img {
+  .screening > a > img {
     width: 90px;
     height: 140px;
   }
@@ -2386,7 +2386,7 @@ footer {
     border-color: var(--line-strong);
     box-shadow: var(--shadow-2);
   }
-  .screening:hover > img {
+  .screening:hover > a > img {
     transform: scale(1.03);
   }
   .time:hover {
@@ -2615,7 +2615,7 @@ footer {
     grid-template-columns: 64px minmax(0, 1fr);
     gap: 0.75rem;
   }
-  .screening > img {
+  .screening > a > img {
     width: 64px;
     height: 96px;
   }
@@ -3510,4 +3510,249 @@ footer {
   margin-left: 0.4rem;
   color: var(--accent);
   background: var(--accent-soft);
+}
+
+/* ---- Film page --------------------------------------------------------- */
+.movie-poster .poster-link {
+  display: block;
+}
+.movie h3 a,
+.screening h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.screening h2 a:hover {
+  color: var(--accent);
+}
+.screening > a {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  align-self: start;
+}
+.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.details-link {
+  display: inline-block;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+.film-hero {
+  position: relative;
+  background-color: var(--surface);
+  background-size: cover;
+  background-position: center 20%;
+  isolation: isolate;
+}
+.film-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to top, #0a0a0c 0%, rgba(10, 10, 12, 0.55) 60%),
+    linear-gradient(to right, rgba(10, 10, 12, 0.95) 20%, transparent 85%);
+}
+.film-hero-inner {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2.25rem;
+  align-items: end;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 4.5rem 1.5rem 2.5rem;
+}
+.film-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  animation: hero-in 700ms var(--ease-out) backwards;
+}
+.film-headline > * {
+  animation: hero-in 700ms var(--ease-out) backwards;
+}
+.film-headline > :nth-child(n + 3) {
+  animation-delay: 120ms;
+}
+.film-headline > :nth-child(n + 5) {
+  animation-delay: 240ms;
+}
+.film-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--text-sm);
+}
+.film-headline h1 {
+  margin: 0.4rem 0 0.2rem;
+  font-size: clamp(2rem, 4.5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+.film-year {
+  color: var(--muted);
+  font-weight: 400;
+}
+.film-tagline {
+  margin: 0.4rem 0 0;
+  color: var(--text-2);
+  font-style: italic;
+}
+.film-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+.film-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.film-score small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.film-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.film-genres li {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  color: var(--text-2);
+}
+.film-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+.film-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 2.5rem;
+  align-items: start;
+}
+.film-body h2 {
+  font-size: var(--text-xl);
+  margin: 0 0 0.8rem;
+}
+.film-overview {
+  max-width: 68ch;
+  margin: 0 0 2.25rem;
+  color: var(--text-2);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+.cast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cast-card {
+  display: grid;
+  gap: 0.15rem;
+  animation: rise-in 450ms var(--ease-out) backwards;
+}
+.cast-card:nth-child(n + 4) {
+  animation-delay: 80ms;
+}
+.cast-card:nth-child(n + 8) {
+  animation-delay: 160ms;
+}
+.cast-card img,
+.cast-initials {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.4rem;
+  background: var(--surface-3);
+  transition: transform 350ms var(--ease-out);
+}
+.cast-initials {
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cast-card strong {
+  font-size: var(--text-sm);
+}
+.cast-card small {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.film-facts {
+  padding: 1.5rem;
+  position: sticky;
+  top: 80px;
+}
+.film-facts dl {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+}
+.film-facts dt {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.film-facts dd {
+  margin: 0.15rem 0 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cast-card:hover img,
+  .cast-card:hover .cast-initials {
+    transform: translateY(-4px);
+  }
+}
+@media (max-width: 800px) {
+  .film-hero-inner {
+    grid-template-columns: 130px 1fr;
+    gap: 1.25rem;
+    padding: 3rem 1rem 1.5rem;
+  }
+  .film-body {
+    grid-template-columns: 1fr;
+  }
+  .film-facts {
+    position: static;
+  }
+}
+@media (max-width: 500px) {
+  .film-hero-inner {
+    grid-template-columns: 1fr;
+  }
+  .film-poster {
+    width: 140px;
+  }
+  .cast-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
 }

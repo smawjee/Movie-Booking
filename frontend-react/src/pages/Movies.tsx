@@ -243,7 +243,9 @@ export function Movies() {
         <div className="screening-list">
           {list.map((movie) => (
             <article className="screening card" key={movie.id}>
-              <img src={poster(movie.poster_path)} alt="" />
+              <Link to="/film/$id" params={{ id: String(movie.id) }}>
+                <img src={poster(movie.poster_path)} alt="" />
+              </Link>
               <div>
                 <span className="badge">{movie.rating}</span>
                 {movie.classic && (
@@ -258,7 +260,11 @@ export function Movies() {
                     {languageLabel(movie.language)}
                   </span>
                 )}
-                <h2>{movie.title}</h2>
+                <h2>
+                  <Link to="/film/$id" params={{ id: String(movie.id) }}>
+                    {movie.title}
+                  </Link>
+                </h2>
                 {movie.original_title &&
                   movie.original_title !== movie.title && (
                     <span className="original-title" lang={movie.language}>
@@ -274,7 +280,14 @@ export function Movies() {
                     <Play size={14} aria-hidden="true" /> Watch trailer
                   </button>
                 )}
-                <p>{movie.overview}</p>
+                <p className="clamp">{movie.overview}</p>
+                <Link
+                  to="/film/$id"
+                  params={{ id: String(movie.id) }}
+                  className="text-button details-link"
+                >
+                  Cast, crew and full details →
+                </Link>
                 <div className="times">
                   {screens.data
                     ?.filter((s) => s.movieId === movie.id)

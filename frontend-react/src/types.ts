@@ -20,6 +20,24 @@ export interface Movie {
   /** Days with showtimes still to come (only from /api/movies/showing). */
   dates?: string[];
 }
+export interface CastMember {
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+export interface MovieDetails extends Movie {
+  tagline: string | null;
+  backdrop_path: string | null;
+  genres: string[];
+  directors: string[];
+  writers: string[];
+  cast: CastMember[];
+  score: number | null;
+  votes: number;
+  trailer_key: string | null;
+  countries: string[];
+  studios: string[];
+}
 export interface Experience {
   id: ExperienceId;
   name: string;

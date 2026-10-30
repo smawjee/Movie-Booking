@@ -53,6 +53,16 @@ const reserve = (screening, seatIds, ageConfirmation = adult) =>
     body: { screeningId: screening.id, seatIds, ageConfirmation },
   });
 
+describe("film details", () => {
+  it("returns synopsis, cast and crew fields", async () => {
+    const res = await call("/api/movies/details/900001");
+    expect(res.status).toBe(200);
+    expect(res.body.overview).toBeTruthy();
+    expect(Array.isArray(res.body.cast)).toBe(true);
+    expect(Array.isArray(res.body.directors)).toBe(true);
+  });
+});
+
 describe("screenings", () => {
   it("lists films showing this week with the dates they play", async () => {
     const res = await call("/api/movies/showing?cinema=edinburgh");

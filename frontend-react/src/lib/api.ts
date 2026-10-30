@@ -4,6 +4,7 @@ import type {
   Membership,
   MembershipPlan,
   Movie,
+  MovieDetails,
   Offer,
   PaymentIntentResponse,
   Profile,
@@ -138,6 +139,8 @@ export const api = {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   },
   movies: () => json<Movie[]>("/api/movies/now-playing"),
+  movie: (id: string) =>
+    json<MovieDetails>(`/api/movies/details/${encodeURIComponent(id)}`),
   cinemas: () => json<Cinema[]>("/api/cinemas"),
   showing: (cinema: string) =>
     json<Movie[]>(`/api/movies/showing?cinema=${encodeURIComponent(cinema)}`),

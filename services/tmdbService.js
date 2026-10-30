@@ -353,21 +353,70 @@ async function getUpcoming() {
   return moviesWithRatings;
 }
 
+// Everything the film page shows, in one TMDB call: details plus credits,
+// videos and UK release certificates.
 async function getMovieDetails(movieId) {
-  if (!TMDB_API_KEY)
-    return demoMovies.find((movie) => movie.id === Number(movieId)) || null;
-  const url = `${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=release_dates`;
-  const data = await fetchJson(url);
-
-  const rating = await getCertification(movieId);
-
+  if (!TMDB_API_KEY) {
+    const movie = demoMovies.find((m) => m.id === Number(movieId));
+    return movie
+      ? {
+          ...movie,
+          tagline: null,
+          backdrop_path: null,
+          genres: [],
+          directors: [],
+          writers: [],
+          cast: [],
+          score: null,
+          votes: 0,
+          trailer_key: null,
+          countries: [],
+          studios: [],
+        }
+      : null;
+  }
+  const data = await fetchJson(
+    `${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en-US` +
+      `&append_to_response=credits,videos,release_dates`,
+  );
+  const uk = data.release_dates?.results?.find((r) => r.iso_3166_1 === "GB");
+  const rating =
+    uk?.release_dates.find((d) => d.certification?.trim())?.certification ||
+    "NR";
+  const crew = data.credits?.crew || [];
+  const crewNames = (jobs) => [
+    ...new Set(crew.filter((c) => jobs.includes(c.job)).map((c) => c.name)),
+  ];
+  const videos = data.videos?.results || [];
+  const trailer =
+    videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ||
+    videos.find((v) => v.site === "YouTube");
   return {
     id: data.id,
     title: data.title,
+    original_title: data.original_title,
+    tagline: data.tagline || null,
     overview: data.overview,
     poster_path: data.poster_path,
+    backdrop_path: data.backdrop_path,
     release_date: data.release_date,
-    rating: rating,
+    runtime: data.runtime,
+    language: data.original_language,
+    rating,
+    genres: (data.genres || []).map((g) => g.name),
+    genre_ids: (data.genres || []).map((g) => g.id),
+    directors: crewNames(["Director"]),
+    writers: crewNames(["Screenplay", "Writer", "Story", "Novel"]).slice(0, 4),
+    cast: (data.credits?.cast || []).slice(0, 12).map((c) => ({
+      name: c.name,
+      character: c.character,
+      profile_path: c.profile_path,
+    })),
+    score: data.vote_count ? Math.round(data.vote_average * 10) / 10 : null,
+    votes: data.vote_count || 0,
+    trailer_key: trailer?.key || null,
+    countries: (data.production_countries || []).map((c) => c.name),
+    studios: (data.production_companies || []).slice(0, 3).map((c) => c.name),
   };
 }
 

@@ -20,7 +20,14 @@ function MovieCard({
   return (
     <article className="movie">
       <div className="movie-poster">
-        <img src={poster(movie.poster_path)} alt={`${movie.title} poster`} />
+        <Link
+          to="/film/$id"
+          params={{ id: String(movie.id) }}
+          className="poster-link"
+          aria-label={`${movie.title}: details`}
+        >
+          <img src={poster(movie.poster_path)} alt={`${movie.title} poster`} />
+        </Link>
         <span className="badge movie-rating">{movie.rating || "NR"}</span>
         {trailer && (
           <button
@@ -33,7 +40,11 @@ function MovieCard({
           </button>
         )}
       </div>
-      <h3>{movie.title}</h3>
+      <h3>
+        <Link to="/film/$id" params={{ id: String(movie.id) }}>
+          {movie.title}
+        </Link>
+      </h3>
       <Link className="button" to="/movies" search={{ movie: movie.title }}>
         Showtimes
       </Link>
@@ -112,10 +123,21 @@ export function Home() {
             {upcoming.data?.slice(0, 4).map((m) => (
               <article className="movie" key={m.id}>
                 <div className="movie-poster">
-                  <img src={poster(m.poster_path)} alt={`${m.title} poster`} />
+                  <Link
+                    to="/film/$id"
+                    params={{ id: String(m.id) }}
+                    className="poster-link"
+                    aria-label={`${m.title}: details`}
+                  >
+                    <img src={poster(m.poster_path)} alt={`${m.title} poster`} />
+                  </Link>
                   <span className="badge movie-rating">{m.rating || "NR"}</span>
                 </div>
-                <h3>{m.title}</h3>
+                <h3>
+                  <Link to="/film/$id" params={{ id: String(m.id) }}>
+                    {m.title}
+                  </Link>
+                </h3>
                 <Link className="button secondary" to="/coming-soon">
                   Pre-book
                 </Link>

@@ -33,6 +33,11 @@ export const moviesRoute = createRoute({
   }),
   component: Movies,
 });
+export const filmRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/film/$id",
+  component: lazyRouteComponent(() => import("./pages/Film"), "Film"),
+});
 const premiumRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/premium",
@@ -108,6 +113,7 @@ const adminRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   moviesRoute,
+  filmRoute,
   premiumRoute,
   bookingRoute,
   membershipRoute,

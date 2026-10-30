@@ -66,7 +66,11 @@ export function ComingSoon() {
                 <img src={poster(movie.poster_path)} alt="" />
                 <div>
                   <span className="badge">{movie.rating || "NR"}</span>
-                  <h2>{movie.title}</h2>
+                  <h2>
+                    <Link to="/film/$id" params={{ id: String(movie.id) }}>
+                      {movie.title}
+                    </Link>
+                  </h2>
                   <p>{movie.overview}</p>
                   {movie.release_date && (
                     <p className="release-note">

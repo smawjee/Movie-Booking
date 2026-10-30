@@ -235,6 +235,20 @@ async function startStudent(userId, { studentEmail, institution }, sendMessage) 
       "Use your university or college email (ending .ac.uk, .edu or similar)",
       400,
     );
+  // One university address can back one Cinego account.
+  const { data: taken, error: takenError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("student_email", email)
+    .neq("id", userId)
+    .in("student_status", ["verified", "pending"])
+    .limit(1);
+  if (takenError) throw takenError;
+  if (taken?.length)
+    throw httpError(
+      "That student email is already linked to another Cinego account",
+      409,
+    );
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
   const { error } = await supabase.from("verification_requests").insert({
     user_id: userId,
