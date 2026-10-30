@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Play, Star, Ticket } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarDays,
+  Clapperboard,
+  Clock,
+  Globe,
+  Languages,
+  PenLine,
+  Play,
+  Star,
+  Ticket,
+  type LucideIcon,
+} from "lucide-react";
 import { api, poster, showDate } from "../lib/api";
 import { languageLabel, languageName } from "../lib/language";
 import { TrailerModal } from "../components/TrailerModal";
@@ -22,6 +35,8 @@ export function Film() {
     staleTime: 30 * 60 * 1000,
   });
   const [trailer, setTrailer] = useState(false);
+  const [story, setStory] = useState(false);
+  const programme = useQuery({ queryKey: ["movies"], queryFn: api.movies });
   if (film.isLoading)
     return <section className="section empty loading">Loading film…</section>;
   if (!film.data)
@@ -36,14 +51,27 @@ export function Film() {
   const m = film.data;
   const year = m.release_date?.slice(0, 4);
   const facts = [
-    ["Director", m.directors.join(", ")],
-    ["Writers", m.writers.join(", ")],
-    ["Release date", m.release_date && showDate(m.release_date)],
-    ["Running time", m.runtime && hoursAndMinutes(m.runtime)],
-    ["Original language", m.language && languageName(m.language)],
-    ["Country", m.countries.join(", ")],
-    ["Studio", m.studios.join(", ")],
-  ].filter(([, value]) => value) as [string, string][];
+    ["Director", m.directors.join(", "), Clapperboard],
+    ["Writers", m.writers.join(", "), PenLine],
+    ["Release date", m.release_date && showDate(m.release_date), CalendarDays],
+    ["Running time", m.runtime && hoursAndMinutes(m.runtime), Clock],
+    ["Language", m.language && languageName(m.language), Languages],
+    ["Country", m.countries.join(", "), Globe],
+    ["Studio", m.studios.join(", "), Building2],
+  ].filter(([, value]) => value) as [string, string, LucideIcon][];
+  const longStory = (m.overview || "").length > 320;
+  // Other films in the programme, those sharing the most genres first.
+  const genres = new Set(m.genre_ids);
+  const similar = (programme.data || [])
+    .filter((f) => f.id !== m.id)
+    .map((f) => ({
+      f,
+      shared: f.genre_ids.filter((g) => genres.has(g)).length,
+    }))
+    .filter(({ shared }) => shared > 0)
+    .sort((a, b) => b.shared - a.shared)
+    .slice(0, 10)
+    .map(({ f }) => f);
   return (
     <>
       <section
@@ -128,46 +156,68 @@ export function Film() {
         <FilmShowtimes movieId={m.id} />
       </div>
       <section className="section film-body">
-        <div>
-          <h2>Synopsis</h2>
-          <p className="film-overview">
-            {m.overview || "No synopsis available yet."}
-          </p>
+        <div className="film-main">
+          <div className="film-block">
+            <span className="eyebrow">The story</span>
+            <h2>Synopsis</h2>
+            <p
+              className={`film-overview${longStory && !story ? " clamped" : ""}`}
+            >
+              {m.overview || "No synopsis available yet."}
+            </p>
+            {longStory && (
+              <button
+                type="button"
+                className="text-button read-more"
+                aria-expanded={story}
+                onClick={() => setStory((v) => !v)}
+              >
+                {story ? "Show less" : "Read more"}
+              </button>
+            )}
+          </div>
           {m.cast.length > 0 && (
-            <>
+            <div className="film-block">
+              <span className="eyebrow">On screen</span>
               <h2>Cast</h2>
-              <ul className="cast-grid">
+              <ul className="cast-row">
                 {m.cast.map((c) => (
                   <li key={`${c.name}-${c.character}`} className="cast-card">
-                    {c.profile_path ? (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w185${c.profile_path}`}
-                        alt=""
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="cast-initials" aria-hidden="true">
-                        {c.name
-                          .split(" ")
-                          .map((w) => w[0])
-                          .slice(0, 2)
-                          .join("")}
-                      </span>
-                    )}
+                    <span className="cast-photo">
+                      {c.profile_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w185${c.profile_path}`}
+                          alt=""
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span aria-hidden="true">
+                          {c.name
+                            .split(" ")
+                            .map((w) => w[0])
+                            .slice(0, 2)
+                            .join("")}
+                        </span>
+                      )}
+                    </span>
                     <strong>{c.name}</strong>
                     {c.character && <small>{c.character}</small>}
                   </li>
                 ))}
               </ul>
-            </>
+            </div>
           )}
         </div>
         {facts.length > 0 && (
           <aside className="film-facts card">
+            <span className="eyebrow">Behind the film</span>
             <h2>Details</h2>
             <dl>
-              {facts.map(([label, value]) => (
+              {facts.map(([label, value, Icon]) => (
                 <div key={label}>
+                  <span className="fact-icon" aria-hidden="true">
+                    <Icon size={16} />
+                  </span>
                   <dt>{label}</dt>
                   <dd>{value}</dd>
                 </div>
@@ -176,6 +226,31 @@ export function Film() {
           </aside>
         )}
       </section>
+      {similar.length > 0 && (
+        <section className="section film-similar">
+          <span className="eyebrow">Also showing</span>
+          <h2>More like this</h2>
+          <ul className="similar-row">
+            {similar.map((f) => (
+              <li key={f.id}>
+                <Link to="/film/$id" params={{ id: String(f.id) }}>
+                  <span className="similar-poster">
+                    <img
+                      src={poster(f.poster_path, 342)}
+                      alt=""
+                      loading="lazy"
+                    />
+                    <span className="badge movie-rating">
+                      {f.rating || "NR"}
+                    </span>
+                  </span>
+                  <strong>{f.title}</strong>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {trailer && m.trailer_key && (
         <TrailerModal
           trailerUrl={`https://www.youtube.com/embed/${m.trailer_key}`}
