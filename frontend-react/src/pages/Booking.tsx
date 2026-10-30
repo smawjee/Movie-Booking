@@ -144,7 +144,15 @@ export function Booking() {
             map and select exact seats.
           </p>
         </div>
-        <AgeGate rating={detail.data.rating} onConfirm={setAge} />
+        {session && profile.isLoading ? (
+          <div className="empty loading">Loading your account…</div>
+        ) : (
+          <AgeGate
+            rating={detail.data.rating}
+            onConfirm={setAge}
+            accountAge={profile.data?.age ?? null}
+          />
+        )}
       </section>
     );
   return (

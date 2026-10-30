@@ -8,7 +8,7 @@ Stripe test mode (card `4242 4242 4242 4242`, any future date, any CVC).
 
 ## Features
 
-- Films and trailers from TMDB, with showtimes across three cinemas and six
+- Films and trailers from TMDB, with showtimes across eight cinemas and six
   screen formats (Standard, IMAX, Dolby, 4DX, ScreenX, 3D)
 - Seat selection with 10-minute holds, UK age-rating checks and ID
   verification for 18-rated films
@@ -16,8 +16,7 @@ Stripe test mode (card `4242 4242 4242 4242`, any future date, any CVC).
   member and student discounts and free member tickets
 - Accounts with email/password or Google sign-in (Supabase Auth), ticket
   history and account deletion
-- PDF tickets with signed QR codes, emailed from Cinego over SMTP, and
-  Add to Apple Wallet / Google Wallet passes
+- PDF tickets with signed QR codes, emailed from Cinego over SMTP
 - Admin dashboard: revenue and ticket sales, bookings search with ticket
   resend, and a door check that validates ticket QR codes
 - Cinebot, an OpenAI assistant grounded in the real programme
@@ -93,18 +92,7 @@ For frontend hot reload, also run `npm run dev` and open the Vite address.
    (default "Cinego Tickets"). Without SMTP, tickets render as previews and
    are never reported as sent. Right after booking a ticket can be emailed
    to any address; later, only the signed-in owner can send it elsewhere.
-7. **Google Wallet:** in the
-   [Google Pay & Wallet Console](https://pay.google.com/business/console)
-   create an issuer, enable the Google Wallet API in Google Cloud, create a
-   service account with a JSON key and add its email as a user in the
-   console. Set `GOOGLE_WALLET_ISSUER_ID` and paste the whole JSON key into
-   `GOOGLE_WALLET_SERVICE_ACCOUNT`.
-8. **Apple Wallet:** needs a paid Apple Developer account. Create a Pass Type
-   ID and its certificate, then set `APPLE_WALLET_PASS_TYPE_ID`,
-   `APPLE_WALLET_TEAM_ID`, `APPLE_WALLET_CERT` and `APPLE_WALLET_KEY` (PEM),
-   and `APPLE_WALLET_WWDR_CERT` (Apple's WWDR G4 certificate as PEM). Each
-   wallet button appears only once its settings are present.
-9. **Admins:** set `app_metadata.role` to `"admin"` on a Supabase user (only
+7. **Admins:** set `app_metadata.role` to `"admin"` on a Supabase user (only
    the service role can), or list emails in `ADMIN_EMAILS`. Admins get an
    Admin link in the header that opens `/admin`.
 
