@@ -12,6 +12,7 @@ export interface Movie {
   classic?: boolean;
   overview: string;
   poster_path: string | null;
+  backdrop_path?: string | null;
   rating: string;
   genre_ids: number[];
   runtime: number;

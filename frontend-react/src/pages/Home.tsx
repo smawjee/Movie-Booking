@@ -6,6 +6,7 @@ import { api, poster } from "../lib/api";
 import { useTrailers } from "../lib/hooks";
 import { PageHero } from "../components/PageHero";
 import { TrailerModal } from "../components/TrailerModal";
+import { FeaturedHero } from "../components/FeaturedHero";
 import type { Movie, Trailer } from "../types";
 
 function MovieCard({
@@ -60,26 +61,38 @@ export function Home() {
   });
   const trailers = useTrailers();
   const [playing, setPlaying] = useState<Trailer | null>(null);
+  // Spotlight the top films that have artwork wide enough for a backdrop.
+  const featured = (films.data || [])
+    .filter((m) => m.backdrop_path)
+    .slice(0, 5);
   const trailerById = new Map(
     (trailers.data || []).map((t) => [t.id, t] as const),
   );
   return (
     <>
-      <PageHero
-        as="h1"
-        eyebrow="Your next night out"
-        title={
-          <>
-            Big stories belong on the <em>big screen.</em>
-          </>
-        }
-        copy="Discover films, premium experiences and the perfect seats."
-        cta={
-          <Link className="button" to="/movies" search={{}}>
-            Explore showtimes
-          </Link>
-        }
-      />
+      {featured.length ? (
+        <FeaturedHero
+          films={featured}
+          trailers={trailerById}
+          onPlayTrailer={setPlaying}
+        />
+      ) : (
+        <PageHero
+          as="h1"
+          eyebrow="Your next night out"
+          title={
+            <>
+              Big stories belong on the <em>big screen.</em>
+            </>
+          }
+          copy="Discover films, premium experiences and the perfect seats."
+          cta={
+            <Link className="button" to="/movies" search={{}}>
+              Explore showtimes
+            </Link>
+          }
+        />
+      )}
       <section className="section">
         <div className="section-head">
           <div>

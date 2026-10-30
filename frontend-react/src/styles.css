@@ -4401,3 +4401,171 @@ footer {
     border-top: 2px dashed rgba(255, 255, 255, 0.15);
   }
 }
+
+/* ---- Home spotlight ---------------------------------------------------- */
+.featured-hero {
+  position: relative;
+  display: grid;
+  align-items: end;
+  min-height: min(78vh, 680px);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--surface);
+}
+.featured-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 1.2s var(--ease-out),
+    transform 8s linear;
+}
+.featured-backdrop.active {
+  opacity: 1;
+  transform: scale(1);
+}
+.featured-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      to top,
+      #0a0a0c 2%,
+      rgba(10, 10, 12, 0.35) 55%,
+      rgba(10, 10, 12, 0.6)
+    ),
+    linear-gradient(to right, rgba(10, 10, 12, 0.92) 15%, transparent 75%);
+}
+.featured-copy {
+  display: grid;
+  gap: 0.8rem;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 6rem 1.5rem 4.5rem;
+}
+.featured-copy > * {
+  max-width: 620px;
+  animation: hero-in 700ms var(--ease-out) backwards;
+}
+.featured-copy > :nth-child(2) {
+  animation-delay: 80ms;
+}
+.featured-copy > :nth-child(3) {
+  animation-delay: 160ms;
+}
+.featured-copy > :nth-child(n + 4) {
+  animation-delay: 240ms;
+}
+.featured-copy .eyebrow {
+  color: var(--accent);
+}
+.featured-copy h1 {
+  margin: 0;
+  font-size: var(--text-hero);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.featured-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+.featured-copy p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.featured-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+.featured-actions .button.secondary {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+/* Progress dots: the active one fills over the rotation interval. */
+.featured-dots {
+  position: absolute;
+  right: max(1.5rem, calc((100% - 1180px) / 2 + 1.5rem));
+  bottom: 2rem;
+  display: flex;
+  gap: 0.45rem;
+}
+.featured-dots button {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    width 350ms var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+.featured-dots button.active {
+  width: 36px;
+  background: rgba(255, 255, 255, 0.3);
+}
+.featured-dots button.active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  opacity: 0.35;
+}
+.featured-dots span {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left;
+  animation: dot-fill linear forwards;
+}
+@keyframes dot-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (max-width: 800px) {
+  .featured-hero {
+    min-height: 560px;
+  }
+  .featured-copy {
+    padding: 5rem 1rem 3.75rem;
+  }
+  .featured-dots {
+    left: 1rem;
+    right: auto;
+    bottom: 1.4rem;
+  }
+}
+@media (max-width: 500px) {
+  .featured-copy h1 {
+    font-size: 2.5rem;
+  }
+  .featured-copy p {
+    font-size: var(--text-sm);
+  }
+}

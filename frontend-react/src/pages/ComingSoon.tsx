@@ -74,7 +74,7 @@ export function ComingSoon() {
                   <p>{movie.overview}</p>
                   {movie.release_date && (
                     <p className="release-note">
-                      In cinemas from {movie.release_date}
+                      In cinemas from {showDate(movie.release_date)}
                     </p>
                   )}
                   {times.length ? (

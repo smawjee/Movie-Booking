@@ -227,6 +227,7 @@ async function describe(movie) {
     original_title: movie.original_title,
     overview: movie.overview,
     poster_path: movie.poster_path,
+    backdrop_path: details.backdrop_path || null,
     rating: certification,
     genre_ids: movie.genre_ids,
     runtime: details.runtime,
