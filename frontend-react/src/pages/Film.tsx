@@ -5,6 +5,7 @@ import { ArrowLeft, Play, Star, Ticket } from "lucide-react";
 import { api, poster, showDate } from "../lib/api";
 import { languageLabel, languageName } from "../lib/language";
 import { TrailerModal } from "../components/TrailerModal";
+import { FilmShowtimes } from "../components/FilmShowtimes";
 import { filmRoute } from "../routes";
 
 const hoursAndMinutes = (minutes: number) =>
@@ -98,9 +99,18 @@ export function Film() {
               </ul>
             )}
             <div className="film-actions">
-              <Link className="button" to="/movies" search={{ movie: m.title }}>
+              <a
+                className="button"
+                href="#showtimes"
+                onClick={(event) => {
+                  event.preventDefault();
+                  document
+                    .getElementById("showtimes")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
                 <Ticket size={16} aria-hidden="true" /> Book tickets
-              </Link>
+              </a>
               {m.trailer_key && (
                 <button
                   type="button"
@@ -114,6 +124,9 @@ export function Film() {
           </div>
         </div>
       </section>
+      <div className="section film-showtimes-wrap">
+        <FilmShowtimes movieId={m.id} />
+      </div>
       <section className="section film-body">
         <div>
           <h2>Synopsis</h2>

@@ -658,6 +658,7 @@ main {
 }
 .filters input,
 .filters select,
+.film-showtimes-head select,
 .summary input,
 .payment input,
 .age-gate input,
@@ -677,6 +678,7 @@ main {
 }
 .filters input:focus,
 .filters select:focus,
+.film-showtimes-head select:focus,
 .summary input:focus,
 .payment input:focus,
 .age-gate input:focus,
@@ -686,7 +688,8 @@ main {
   box-shadow: 0 0 0 3px rgba(245, 201, 72, 0.18);
   background: rgba(255, 255, 255, 0.07);
 }
-.filters select {
+.filters select,
+.film-showtimes-head select {
   appearance: none;
   padding-right: 2.4rem;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a6a9b2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -3859,4 +3862,94 @@ footer {
   color: var(--muted);
   font-size: 0.6875rem;
   line-height: 1.3;
+}
+
+/* ---- Film page showtimes ------------------------------------------------ */
+.film-showtimes-wrap {
+  padding-bottom: 0;
+}
+.film-showtimes {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  scroll-margin-top: 90px;
+}
+.film-showtimes-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.film-showtimes-head h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+.film-showtimes-head select {
+  width: auto;
+  min-width: 170px;
+}
+.film-showtimes p {
+  margin: 0;
+}
+.date-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scroll-snap-type: x mandatory;
+}
+.date-chip {
+  display: grid;
+  justify-items: center;
+  flex: 0 0 64px;
+  padding: 0.55rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+.date-chip strong {
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--text);
+}
+.date-chip small {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.date-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.date-chip.active strong {
+  color: var(--accent-ink);
+}
+.date-chip:active {
+  transform: scale(0.95);
+}
+.film-showtimes .times > * {
+  animation: rise-in 350ms var(--ease-out) backwards;
+}
+.film-showtimes .times > :nth-child(n + 3) {
+  animation-delay: 60ms;
+}
+.film-showtimes .times > :nth-child(n + 5) {
+  animation-delay: 120ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .date-chip:not(.active):hover {
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, 0.09);
+    transform: translateY(-2px);
+  }
 }
