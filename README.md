@@ -1,5 +1,7 @@
 # Cinego
 
+[![CI](https://github.com/smawjee/Movie-Booking/actions/workflows/ci.yml/badge.svg)](https://github.com/smawjee/Movie-Booking/actions/workflows/ci.yml)
+
 A full-stack cinema booking app: browse what's on, pick exact seats on a live
 auditorium map, pay with Stripe and get a QR-coded PDF ticket by email.
 
@@ -102,7 +104,7 @@ integrations are live.
 ## Quality and operations
 
 ```bash
-npm test                # Vitest: pricing, showtimes, tickets, booking API, Stripe webhook
+npm test                # Vitest, 69 tests: pricing, showtimes, tickets, booking API, Stripe webhook
 npm run check           # TypeScript, production build, syntax checks
 npm audit --omit=dev
 ```
