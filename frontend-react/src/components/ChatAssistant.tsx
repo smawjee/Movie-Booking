@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Sparkles, RotateCcw, Ticket, X } from "lucide-react";
+import { ArrowRight, Sparkles, RotateCcw, Ticket, X } from "lucide-react";
 import { useDelayedClose } from "../lib/useDelayedClose";
 type Tag = { screening: string; label: string };
 type Message = {
@@ -15,7 +15,16 @@ const starters = [
   "Which membership saves me most?",
   "Films with subtitles in Glasgow",
 ];
-const TAG = /\[\[book:(S\d+)\]\]/g;
+const TAG = /\[\[((?:book|page):[\w-]+)\]\]/g;
+const PAGES = {
+  movies: ["/movies", "Showtimes"],
+  "coming-soon": ["/coming-soon", "Coming soon"],
+  membership: ["/membership", "Membership"],
+  food: ["/food", "Food & drinks"],
+  premium: ["/premium", "Premium screens"],
+  trailers: ["/trailers", "Trailers"],
+  account: ["/account", "Your account"],
+} as const;
 
 /** **bold** spans within a line. */
 const inline = (text: string) =>
@@ -50,7 +59,16 @@ function Reply({
     const parts = line.replace(/^\s*[-•*]\s+/, "").split(TAG);
     const content = parts.map((part, j) => {
       if (j % 2 === 0) return <Fragment key={j}>{inline(part)}</Fragment>;
-      const tag = message.tags?.[part];
+      const [kind, ref] = part.split(":");
+      if (kind === "page" && ref in PAGES) {
+        const [to, label] = PAGES[ref as keyof typeof PAGES];
+        return (
+          <Link key={j} className="chat-book" to={to} onClick={onNavigate}>
+            <ArrowRight size={13} aria-hidden="true" /> {label}
+          </Link>
+        );
+      }
+      const tag = kind === "book" ? message.tags?.[ref] : undefined;
       return tag ? (
         <Link
           key={j}

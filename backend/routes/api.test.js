@@ -76,6 +76,24 @@ describe("assistant", () => {
     for (const alias of used) expect(tags[alias].screening).toBeTruthy();
     expect(res.text).toContain("event: complete");
   });
+  it("follows up 'take me there' with a link to the page discussed", async () => {
+    const response = await fetch(`${baseUrl}/api/assistant/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "Can you take me there",
+        history: [
+          { role: "user", text: "Show membership options" },
+          { role: "assistant", text: "Cinego+ plans: Silver, Gold…" },
+        ],
+      }),
+    });
+    expect(await response.text()).toContain("[[page:membership]]");
+  });
+  it("does not treat 'is there' as navigation", async () => {
+    const res = await stream("Is there anything scary tonight?");
+    expect(res.text).not.toContain("[[page:");
+  });
   it("refuses sensitive details", async () => {
     expect((await stream("my password is hunter2")).status).toBe(400);
   });
