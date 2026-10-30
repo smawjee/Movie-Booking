@@ -63,7 +63,9 @@ export function ComingSoon() {
               screens.data?.filter((s) => s.movieId === movie.id) || [];
             return (
               <article className="screening card" key={movie.id}>
-                <img src={poster(movie.poster_path)} alt="" />
+                <Link to="/film/$id" params={{ id: String(movie.id) }}>
+                  <img src={poster(movie.poster_path)} alt="" />
+                </Link>
                 <div>
                   <span className="badge">{movie.rating || "NR"}</span>
                   <h2>

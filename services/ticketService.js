@@ -58,6 +58,7 @@ async function ticketData(booking) {
 }
 
 const { cinemaName: nameOfCinema } = require("./cinemas");
+const emailImages = require("./emailImages");
 const prettyDate = (iso) => {
   const date = new Date(`${iso}T12:00:00Z`);
   return Number.isNaN(date.valueOf())
@@ -350,12 +351,52 @@ async function pdf(booking) {
   return done;
 }
 
-async function html(booking, inlineQr = false) {
+const SITE_URL = () =>
+  (
+    process.env.PUBLIC_SITE_URL || "https://movie-booking-smawjee.vercel.app"
+  ).replace(/\/$/, "");
+
+// Table layout and inline styles only: Gmail and Outlook drop <style>,
+// body backgrounds and most CSS. A light ticket under a dark header keeps
+// the white-and-gold logo visible and survives email dark modes.
+async function html(booking, inline = false) {
   const { qrDataUrl } = await ticketData(booking);
+  const s = booking.screening;
   const seats = booking.seats
     .map((seat) => `${seat.row}${seat.number}`)
     .join(", ");
-  return `<!doctype html><html><body style="margin:0;background:#090a0d;color:#f7f7f5;font-family:Arial,sans-serif"><div style="max-width:620px;margin:auto;padding:32px"><h1 style="color:#f5bd27;letter-spacing:2px">CINEGO</h1><p style="color:#aaa">BOOKING CONFIRMED · ${escapeHtml(booking.reference)}</p><h2 style="font-size:30px">${escapeHtml(booking.screening.movieTitle)}</h2><div style="background:#191c22;padding:24px;border:1px solid #343740;border-radius:16px"><p><b>${escapeHtml(booking.screening.date)} at ${escapeHtml(booking.screening.time)}</b></p><p>Cinego ${escapeHtml(booking.screening.cinema)} · Screen ${escapeHtml(booking.screening.screen)}</p><p>${escapeHtml(booking.screening.experience?.name || "Standard")}</p><p>Seats: ${escapeHtml(seats)}</p><p>Total: £${(booking.totalPence / 100).toFixed(2)}</p><div style="background:#fff;padding:12px;width:180px;border-radius:12px"><img src="${inlineQr ? "cid:cinego-ticket-qr" : qrDataUrl}" width="180" alt="Ticket QR code"></div><p style="color:#aaa">Show this QR code at the entrance. Photo ID may be requested. Please arrive 15 minutes early.</p></div></div></body></html>`;
+  const logo = inline
+    ? "cid:cinego-logo"
+    : `data:image/png;base64,${emailImages.logo}`;
+  const row = (label, value) =>
+    `<tr><td style="padding:10px 0;border-top:1px solid #ececf0;color:#6e6e73;font-size:13px;width:38%">${label}</td><td style="padding:10px 0;border-top:1px solid #ececf0;color:#111114;font-size:15px;font-weight:bold">${value}</td></tr>`;
+  const ticketUrl = `${SITE_URL()}/confirmation?reference=${encodeURIComponent(booking.reference)}`;
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head><body style="margin:0;padding:0;background:#f2f2f4">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f2f2f4" style="background:#f2f2f4"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;font-family:Helvetica,Arial,sans-serif">
+<tr><td bgcolor="#0a0a0c" style="background:#0a0a0c;padding:22px 28px"><img src="${logo}" width="168" height="38" alt="Cinego" style="display:block;border:0"></td></tr>
+<tr><td style="padding:28px 28px 8px">
+<span style="display:inline-block;padding:5px 10px;border-radius:999px;background:#e8f8ee;color:#1a7f43;font-size:12px;font-weight:bold;letter-spacing:.5px">&#10003; BOOKING CONFIRMED</span>
+<h1 style="margin:14px 0 4px;font-size:28px;line-height:1.15;color:#111114">${escapeHtml(s.movieTitle)}</h1>
+<p style="margin:0 0 16px;color:#6e6e73;font-size:14px">${escapeHtml(s.experience?.name || "Standard 2D")}${s.rating ? ` &middot; ${escapeHtml(s.rating)}` : ""}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+${row("Date", escapeHtml(prettyDate(s.date)))}
+${row("Time", escapeHtml(s.time))}
+${row("Cinema", `${escapeHtml(nameOfCinema(s.cinema))} &middot; Screen ${escapeHtml(s.screen)}`)}
+${row(booking.seats.length === 1 ? "Seat" : "Seats", escapeHtml(seats))}
+${row("Paid", `&pound;${(booking.totalPence / 100).toFixed(2)}`)}
+</table>
+</td></tr>
+<tr><td align="center" style="padding:16px 28px 8px;border-top:2px dashed #dcdce2">
+<img src="${inline ? "cid:cinego-ticket-qr" : qrDataUrl}" width="200" height="200" alt="Ticket QR code" style="display:block;border:0">
+<p style="margin:10px 0 0;color:#111114;font-size:16px;font-weight:bold;letter-spacing:1px">${escapeHtml(booking.reference)}</p>
+<p style="margin:4px 0 0;color:#6e6e73;font-size:13px">Show this code at the auditorium entrance</p>
+</td></tr>
+<tr><td align="center" style="padding:20px 28px 28px">
+<a href="${ticketUrl}" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#f5c948;color:#17140b;font-weight:bold;font-size:15px;text-decoration:none">View your ticket</a>
+<p style="margin:18px 0 0;color:#6e6e73;font-size:12px;line-height:1.5">Arrive 15 minutes early. Photo ID may be requested for age-rated films.<br>Your PDF ticket is attached. Cinego is a portfolio demonstration project.</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
 }
 
 function transporter() {
@@ -410,7 +451,7 @@ async function deliver(booking, to = booking.email) {
     to,
     subject: `Your Cinego ticket: ${booking.screening.movieTitle}`,
     html: content,
-    text: `Your Cinego booking ${booking.reference}: ${booking.screening.movieTitle}, ${booking.screening.date} at ${booking.screening.time}. Seats: ${booking.seats.map((s) => `${s.row}${s.number}`).join(", ")}.${attachment ? " Your PDF ticket is attached." : ""}`,
+    text: `Your Cinego booking ${booking.reference}: ${booking.screening.movieTitle}, ${prettyDate(booking.screening.date)} at ${booking.screening.time}. Seats: ${booking.seats.map((s) => `${s.row}${s.number}`).join(", ")}.${attachment ? " Your PDF ticket is attached." : ""}`,
     attachments: [
       ...(attachment
         ? [
@@ -425,6 +466,12 @@ async function deliver(booking, to = booking.email) {
         filename: "ticket-qr.png",
         content: qr,
         cid: "cinego-ticket-qr",
+        contentType: "image/png",
+      },
+      {
+        filename: "cinego-logo.png",
+        content: Buffer.from(emailImages.logo, "base64"),
+        cid: "cinego-logo",
         contentType: "image/png",
       },
     ],

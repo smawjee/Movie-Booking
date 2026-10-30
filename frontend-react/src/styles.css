@@ -2717,11 +2717,17 @@ footer {
     height: 96px;
   }
   .times {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
   }
   .time {
     min-width: 0;
     max-width: 100%;
+    padding: 0.55rem 0.7rem;
+  }
+  .time small {
+    font-size: 0.6875rem;
   }
   .ticket-actions .button {
     width: 100%;
