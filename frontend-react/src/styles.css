@@ -2199,9 +2199,6 @@ footer {
     width: 90px;
     height: 140px;
   }
-  .screening p {
-    display: none;
-  }
   .experience-grid,
   .plan-grid {
     grid-template-columns: 1fr;
@@ -3530,12 +3527,6 @@ footer {
   border-radius: var(--radius-md);
   align-self: start;
 }
-.clamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 .details-link {
   display: inline-block;
   margin-bottom: 0.8rem;
@@ -3755,4 +3746,117 @@ footer {
     grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
   }
+}
+
+/* ---- Showtimes card: synopsis and expandable cast/crew ------------------ */
+.film-summary {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+.film-summary p {
+  margin: 0;
+}
+.film-summary-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.film-summary.open .film-summary-text {
+  -webkit-line-clamp: unset;
+}
+.film-summary-leads,
+.film-summary-crew {
+  font-size: var(--text-sm);
+}
+.film-summary-leads span,
+.film-summary-crew span {
+  color: var(--text-2);
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+.more-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-self: start;
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+.more-info svg {
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.film-summary.open .more-info svg {
+  transform: rotate(180deg);
+}
+/* Height animates from 0 to its content via grid rows. */
+.film-summary-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 350ms var(--ease-out),
+    opacity 250ms var(--ease-out);
+}
+.film-summary.open .film-summary-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.film-summary-panel > div {
+  overflow: hidden;
+  min-height: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.film-summary:not(.open) .film-summary-panel {
+  visibility: hidden;
+}
+.film-summary-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+.mini-cast {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 84px;
+  gap: 0.6rem;
+  margin: 0.3rem 0 0;
+  padding: 0 0 0.3rem;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.mini-cast li {
+  display: grid;
+  gap: 0.1rem;
+  scroll-snap-align: start;
+}
+.mini-cast img,
+.mini-cast span {
+  width: 84px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.mini-cast strong {
+  font-size: var(--text-xs);
+  line-height: 1.3;
+}
+.mini-cast small {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.3;
 }

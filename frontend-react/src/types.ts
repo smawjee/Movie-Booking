@@ -17,6 +17,8 @@ export interface Movie {
   runtime: number;
   language: string;
   release_date?: string;
+  /** Lead actors' names (programme lists only). */
+  cast?: string[];
   /** Days with showtimes still to come (only from /api/movies/showing). */
   dates?: string[];
 }
@@ -25,7 +27,7 @@ export interface CastMember {
   character: string;
   profile_path: string | null;
 }
-export interface MovieDetails extends Movie {
+export interface MovieDetails extends Omit<Movie, "cast"> {
   tagline: string | null;
   backdrop_path: string | null;
   genres: string[];

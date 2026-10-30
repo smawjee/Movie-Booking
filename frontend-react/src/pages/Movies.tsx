@@ -9,6 +9,7 @@ import { experiences } from "../lib/experiences";
 import { languageLabel, languageName } from "../lib/language";
 import { useTrailers } from "../lib/hooks";
 import { TrailerModal } from "../components/TrailerModal";
+import { FilmSummary } from "../components/FilmSummary";
 import { moviesRoute } from "../routes";
 import type { Trailer } from "../types";
 
@@ -280,14 +281,7 @@ export function Movies() {
                     <Play size={14} aria-hidden="true" /> Watch trailer
                   </button>
                 )}
-                <p className="clamp">{movie.overview}</p>
-                <Link
-                  to="/film/$id"
-                  params={{ id: String(movie.id) }}
-                  className="text-button details-link"
-                >
-                  Cast, crew and full details →
-                </Link>
+                <FilmSummary movie={movie} />
                 <div className="times">
                   {screens.data
                     ?.filter((s) => s.movieId === movie.id)
