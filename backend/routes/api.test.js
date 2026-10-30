@@ -12,6 +12,7 @@ for (const key of [
   "STRIPE_SECRET_KEY",
   "SMTP_USER",
   "SMTP_PASS",
+  "OPENAI_API_KEY",
 ])
   process.env[key] = "";
 const app = require("../index.js");
@@ -52,6 +53,33 @@ const reserve = (screening, seatIds, ageConfirmation = adult) =>
     method: "POST",
     body: { screeningId: screening.id, seatIds, ageConfirmation },
   });
+
+describe("assistant", () => {
+  const stream = async (message) => {
+    const response = await fetch(`${baseUrl}/api/assistant/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    return { status: response.status, text: await response.text() };
+  };
+  it("offers bookable showings with booking tags", async () => {
+    const res = await stream("Any family films tomorrow?");
+    expect(res.status).toBe(200);
+    const tags = JSON.parse(
+      res.text.match(/event: showtimes\ndata: (.+)/)[1],
+    ).tags;
+    const used = [...res.text.matchAll(/\[\[book:(S\d+)\]\]/g)].map(
+      (m) => m[1],
+    );
+    expect(used.length).toBeGreaterThan(0);
+    for (const alias of used) expect(tags[alias].screening).toBeTruthy();
+    expect(res.text).toContain("event: complete");
+  });
+  it("refuses sensitive details", async () => {
+    expect((await stream("my password is hunter2")).status).toBe(400);
+  });
+});
 
 describe("film details", () => {
   it("returns synopsis, cast and crew fields", async () => {

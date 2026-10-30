@@ -1598,7 +1598,7 @@ body:has(.basket-bar) .chat-launch {
   height: min(570px, calc(100vh - 7rem));
   display: grid;
   grid-template-rows: auto 1fr auto auto auto;
-  background: rgba(20, 20, 22, 0.86);
+  background: rgba(16, 16, 18, 0.97);
   backdrop-filter: var(--material-blur);
   -webkit-backdrop-filter: var(--material-blur);
   border: 1px solid var(--line-strong);
@@ -1714,7 +1714,7 @@ body:has(.basket-bar) .chat-launch {
 .bubble {
   padding: 0.65rem 0.9rem;
   border-radius: 1.1rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-3);
   max-width: 88%;
   font-size: 0.9375rem;
   line-height: 1.45;
@@ -1737,11 +1737,56 @@ body:has(.basket-bar) .chat-launch {
   display: flex;
   margin-top: 0.6rem;
 }
+.bubble p {
+  margin: 0;
+}
+.bubble p + p,
+.bubble p + ul,
+.bubble ul + p {
+  margin-top: 0.5rem;
+}
+.bubble ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+.bubble strong {
+  color: var(--text);
+}
+.bubble.user strong {
+  color: inherit;
+}
+/* Booking tags in a reply become compact gold-edged Book buttons. */
+.chat-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.3rem 0.25rem 0 0;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid rgba(245, 201, 72, 0.5);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  animation: seat-pop 260ms var(--ease-out);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.chat-book:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
 .quick-replies {
   display: flex;
   gap: 0.4rem;
-  flex-wrap: wrap;
-  padding: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 .typing {
   display: flex;

@@ -240,7 +240,7 @@ async function main() {
     });
     await check("assistant validates empty message", async () =>
       assert.equal(
-        (await request("/assistant/chat", { message: "" })).status,
+        (await request("/assistant/stream", { message: "" })).status,
         400,
       ),
     );
@@ -249,18 +249,20 @@ async function main() {
       async () => {
         for (let i = 0; i < 2; i++)
           assert.equal(
-            (await request("/assistant/chat", { message: "password" })).status,
+            (await request("/assistant/stream", { message: "password" }))
+              .status,
             400,
           );
       },
     );
-    await check("guided assistant returns grounded draft", async () => {
-      const r = await request("/assistant/chat", {
+    await check("guided assistant offers bookable showings", async () => {
+      const r = await request("/assistant/stream", {
         message: "Show IMAX tomorrow",
       });
       assert.equal(r.status, 200);
-      assert.equal(r.data.mode, "guided-fallback");
-      assert.ok(r.data.draftUrl.startsWith("/booking?"));
+      assert.ok(r.data.includes("event: showtimes"));
+      assert.ok(r.data.includes("[[book:S"));
+      assert.ok(r.data.includes("guided-fallback"));
     });
     await check("assistant stream finishes", async () => {
       const r = await request("/assistant/stream", { message: "Family films" });
