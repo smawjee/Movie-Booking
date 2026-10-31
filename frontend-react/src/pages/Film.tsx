@@ -158,7 +158,6 @@ export function Film() {
       <section className="section film-body">
         <div className="film-main">
           <div className="film-block">
-            <span className="eyebrow">The story</span>
             <h2>Synopsis</h2>
             <p
               className={`film-overview${longStory && !story ? " clamped" : ""}`}
@@ -178,7 +177,6 @@ export function Film() {
           </div>
           {m.cast.length > 0 && (
             <div className="film-block">
-              <span className="eyebrow">On screen</span>
               <h2>Cast</h2>
               <ul className="cast-row">
                 {m.cast.map((c) => (
@@ -210,7 +208,6 @@ export function Film() {
         </div>
         {facts.length > 0 && (
           <aside className="film-facts card">
-            <span className="eyebrow">Behind the film</span>
             <h2>Details</h2>
             <dl>
               {facts.map(([label, value, Icon]) => (
@@ -228,7 +225,6 @@ export function Film() {
       </section>
       {similar.length > 0 && (
         <section className="section film-similar">
-          <span className="eyebrow">Also showing</span>
           <h2>More like this</h2>
           <ul className="similar-row">
             {similar.map((f) => (

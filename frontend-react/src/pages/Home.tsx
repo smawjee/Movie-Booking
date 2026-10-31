@@ -96,7 +96,6 @@ export function Home() {
       <section className="section">
         <div className="section-head">
           <div>
-            <span className="eyebrow">Now showing</span>
             <h2>Popular this week</h2>
           </div>
         </div>
@@ -120,7 +119,6 @@ export function Home() {
       <section className="section">
         <div className="section-head">
           <div>
-            <span className="eyebrow">Advance tickets</span>
             <h2>Coming soon</h2>
           </div>
           <Link className="button secondary" to="/coming-soon">

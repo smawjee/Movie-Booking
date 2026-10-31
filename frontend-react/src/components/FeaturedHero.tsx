@@ -52,7 +52,9 @@ export function FeaturedHero({
       ))}
       <div className="featured-copy" key={film.id}>
         <span className="eyebrow">Now showing · Popular this week</span>
-        <h1>{film.title}</h1>
+        <h1 className={film.title.length > 28 ? "long" : undefined}>
+          {film.title}
+        </h1>
         <div className="featured-meta">
           <span className="badge">{film.rating || "NR"}</span>
           {film.runtime > 0 && (

@@ -7,7 +7,6 @@ function SeatPreview() {
   return (
     <section className="seat-preview card" aria-labelledby="seat-preview-title">
       <div className="seat-preview-copy">
-        <span className="eyebrow">Know before you book</span>
         <h2 id="seat-preview-title">
           See exactly what the seat map looks like.
         </h2>
@@ -76,7 +75,6 @@ export function Premium() {
               <span>{x.name}</span>
             </div>
             <div className="experience-body">
-              <span className="eyebrow">{id.toUpperCase()}</span>
               <h2>{x.name}</h2>
               <p>{x.copy}</p>
               {x.warning && <p className="warning">{x.warning}</p>}
