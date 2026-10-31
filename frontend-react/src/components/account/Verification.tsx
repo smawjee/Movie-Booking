@@ -18,7 +18,10 @@ function DocumentPicker({
   onChange: (meta: DocumentMeta | null) => void;
 }) {
   const [preview, setPreview] = useState<string | null>(null);
-  useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
+  useEffect(
+    () => () => void (preview && URL.revokeObjectURL(preview)),
+    [preview],
+  );
   return (
     <label className="doc-picker">
       <span>{label}</span>
@@ -41,8 +44,14 @@ function DocumentPicker({
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (preview) URL.revokeObjectURL(preview);
-          setPreview(file && file.type.startsWith("image/") ? URL.createObjectURL(file) : null);
-          onChange(file ? { name: file.name, type: file.type, size: file.size } : null);
+          setPreview(
+            file && file.type.startsWith("image/")
+              ? URL.createObjectURL(file)
+              : null,
+          );
+          onChange(
+            file ? { name: file.name, type: file.type, size: file.size } : null,
+          );
         }}
       />
     </label>
@@ -72,7 +81,11 @@ function IdentityVerify({ profile }: { profile: Profile }) {
   const [doc, setDoc] = useState<DocumentMeta | null>(null);
   const submit = useMutation({
     mutationFn: () =>
-      account.verifyIdentity({ documentType, dateOfBirth: dob, document: doc! }),
+      account.verifyIdentity({
+        documentType,
+        dateOfBirth: dob,
+        document: doc!,
+      }),
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: ["account", "profile"] }),
   });
@@ -86,8 +99,7 @@ function IdentityVerify({ profile }: { profile: Profile }) {
           <h3>Photo ID</h3>
           <p className="muted small">
             Verifying once lets you book 15 and 18 films without an age check
-            every time. It is required for 18-rated films when you’re signed
-            in.
+            every time. It is required for 18-rated films when you’re signed in.
           </p>
         </div>
         <StatusPill status={status} />
@@ -115,7 +127,9 @@ function IdentityVerify({ profile }: { profile: Profile }) {
             Document type
             <select
               value={documentType}
-              onChange={(e) => setDocumentType(e.target.value as typeof documentType)}
+              onChange={(e) =>
+                setDocumentType(e.target.value as typeof documentType)
+              }
             >
               <option value="passport">Passport</option>
               <option value="driving_licence">Driving licence</option>
@@ -131,7 +145,11 @@ function IdentityVerify({ profile }: { profile: Profile }) {
               onChange={(e) => setDob(e.target.value)}
             />
           </label>
-          <DocumentPicker label="Photo of your document" value={doc} onChange={setDoc} />
+          <DocumentPicker
+            label="Photo of your document"
+            value={doc}
+            onChange={setDoc}
+          />
           {status === "rejected" && !submit.error && (
             <p className="error">
               Your last check didn’t pass. Make sure the date of birth matches
@@ -145,7 +163,9 @@ function IdentityVerify({ profile }: { profile: Profile }) {
           )}
           <button
             className="button"
-            disabled={!doc || age === null || age < MIN_ACCOUNT_AGE || submit.isPending}
+            disabled={
+              !doc || age === null || age < MIN_ACCOUNT_AGE || submit.isPending
+            }
           >
             {submit.isPending ? "Submitting…" : "Verify my ID"}
           </button>
@@ -178,8 +198,8 @@ function StudentVerify({ profile }: { profile: Profile }) {
         <div>
           <h3>Student status</h3>
           <p className="muted small">
-            Verified students get 25% off every ticket and can join the
-            Student membership (£4.99/month).
+            Verified students get 25% off every ticket and can join the Student
+            membership (£4.99/month).
           </p>
         </div>
         <StatusPill status={status} />
@@ -223,7 +243,10 @@ function StudentVerify({ profile }: { profile: Profile }) {
             />
           </label>
           {status === "expired" && (
-            <p className="notice">Your student status has expired. Verify again to keep your discount.</p>
+            <p className="notice">
+              Your student status has expired. Verify again to keep your
+              discount.
+            </p>
           )}
           {start.error && (
             <p className="error" role="alert">
@@ -245,8 +268,12 @@ function StudentVerify({ profile }: { profile: Profile }) {
             confirm.mutate();
           }}
         >
-          <p className="step-label">Step 2 of 2: enter your code and add your student ID</p>
-          <p className="muted small">We sent a 6-digit code to {start.data.sentTo}.</p>
+          <p className="step-label">
+            Step 2 of 2: enter your code and add your student ID
+          </p>
+          <p className="muted small">
+            We sent a 6-digit code to {start.data.sentTo}.
+          </p>
           {start.data.demoCode && (
             <p className="notice">
               Demo mode (email isn’t configured on this server): your code is{" "}
@@ -263,7 +290,11 @@ function StudentVerify({ profile }: { profile: Profile }) {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             />
           </label>
-          <DocumentPicker label="Photo of your student ID card" value={doc} onChange={setDoc} />
+          <DocumentPicker
+            label="Photo of your student ID card"
+            value={doc}
+            onChange={setDoc}
+          />
           {confirm.error && (
             <p className="error" role="alert">
               {confirm.error.message}
@@ -275,7 +306,11 @@ function StudentVerify({ profile }: { profile: Profile }) {
           >
             {confirm.isPending ? "Verifying…" : "Verify student status"}
           </button>
-          <button type="button" className="text-button" onClick={() => start.reset()}>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => start.reset()}
+          >
             Use a different email
           </button>
         </form>

@@ -10,8 +10,16 @@ const tuesday = "2026-09-29";
 
 describe("ticket pricing", () => {
   it("charges full price with no discounts", () => {
-    const p = priceTickets({ seats: seats(2), date: wednesday, experienceId: "imax" });
-    expect(p).toMatchObject({ fullPence: 2000, amountPence: 2000, source: "none" });
+    const p = priceTickets({
+      seats: seats(2),
+      date: wednesday,
+      experienceId: "imax",
+    });
+    expect(p).toMatchObject({
+      fullPence: 2000,
+      amountPence: 2000,
+      source: "none",
+    });
   });
   it("picks the best single percentage discount, never stacking", () => {
     const p = priceTickets({

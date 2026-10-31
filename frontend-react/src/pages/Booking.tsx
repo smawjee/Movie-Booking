@@ -52,21 +52,27 @@ export function Booking() {
     [email, setEmail] = useState(""),
     [promoCode, setPromoCode] = useState(""),
     [checkout, setCheckout] = useState(false);
-  const { closing: checkoutClosing, close: closeCheckout } = useDelayedClose(() =>
-    setCheckout(false),
+  const { closing: checkoutClosing, close: closeCheckout } = useDelayedClose(
+    () => setCheckout(false),
   );
   const session = useSession();
   const cinemaName = useCinemaLookup();
   const profile = useProfile(Boolean(session));
   useEffect(() => {
-    if (session?.user.email) setEmail((current) => current || session.user.email!);
+    if (session?.user.email)
+      setEmail((current) => current || session.user.email!);
   }, [session]);
   // An ID-verified account has a checked date of birth: no need to ask again.
-  const verified = profile.data?.identity.status === "verified" ? profile.data : null;
+  const verified =
+    profile.data?.identity.status === "verified" ? profile.data : null;
   const rating = detail.data?.rating;
   useEffect(() => {
     if (!verified || !rating || age) return;
-    if (verified.age !== null && verified.age >= minimumAgeFor(rating) && verified.ageBand)
+    if (
+      verified.age !== null &&
+      verified.age >= minimumAgeFor(rating) &&
+      verified.ageBand
+    )
       setAge({
         rating,
         ageBand: verified.ageBand,
@@ -109,7 +115,11 @@ export function Booking() {
   };
   const confirm = async (paymentIntentId: string) => {
     if (!hold) return;
-    const booking = await api.pay({ reservationId: hold, email, paymentIntentId });
+    const booking = await api.pay({
+      reservationId: hold,
+      email,
+      paymentIntentId,
+    });
     await finish(booking.reference);
   };
   const confirmFree = useMutation({
@@ -121,7 +131,9 @@ export function Booking() {
     reservation.error instanceof ApiError &&
     reservation.error.code === "ID_VERIFICATION_REQUIRED";
   if (detail.isLoading)
-    return <section className="section empty loading">Loading screening…</section>;
+    return (
+      <section className="section empty loading">Loading screening…</section>
+    );
   if (!detail.data)
     return <section className="section empty">Screening unavailable.</section>;
   if (!age)
@@ -349,7 +361,9 @@ export function Booking() {
                   disabled={confirmFree.isPending}
                   onClick={() => confirmFree.mutate()}
                 >
-                  {confirmFree.isPending ? "Confirming…" : "Confirm free booking"}
+                  {confirmFree.isPending
+                    ? "Confirming…"
+                    : "Confirm free booking"}
                 </button>
                 <button className="button secondary" onClick={closeCheckout}>
                   Cancel
@@ -368,9 +382,13 @@ export function Booking() {
               onCancel={closeCheckout}
             >
               {paymentIntent.isError && (
-                <p className="error">{(paymentIntent.error as Error).message}</p>
+                <p className="error">
+                  {(paymentIntent.error as Error).message}
+                </p>
               )}
-              {paymentIntent.data && <DiscountSummary data={paymentIntent.data} />}
+              {paymentIntent.data && (
+                <DiscountSummary data={paymentIntent.data} />
+              )}
             </PaymentForm>
           )}
         </div>

@@ -55,7 +55,9 @@ export function ComingSoon() {
       {movies.isLoading || screens.isLoading ? (
         <div className="empty loading">Loading upcoming releases…</div>
       ) : movies.isError ? (
-        <div className="empty">Upcoming releases are temporarily unavailable.</div>
+        <div className="empty">
+          Upcoming releases are temporarily unavailable.
+        </div>
       ) : (
         <div className="screening-list">
           {movies.data?.map((movie) => {
@@ -97,8 +99,8 @@ export function ComingSoon() {
                     </div>
                   ) : (
                     <p className="release-note">
-                      No advance screenings on this date yet — try another
-                      date above.
+                      No advance screenings on this date yet — try another date
+                      above.
                     </p>
                   )}
                 </div>

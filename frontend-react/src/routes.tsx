@@ -54,7 +54,10 @@ export const bookingRoute = createRoute({
 const membershipRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/membership",
-  component: lazyRouteComponent(() => import("./pages/Membership"), "Membership"),
+  component: lazyRouteComponent(
+    () => import("./pages/Membership"),
+    "Membership",
+  ),
 });
 export const confirmationRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -62,7 +65,10 @@ export const confirmationRoute = createRoute({
   validateSearch: (s: Record<string, unknown>) => ({
     reference: String(s.reference || ""),
   }),
-  component: lazyRouteComponent(() => import("./pages/Confirmation"), "Confirmation"),
+  component: lazyRouteComponent(
+    () => import("./pages/Confirmation"),
+    "Confirmation",
+  ),
 });
 const foodRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -72,7 +78,10 @@ const foodRoute = createRoute({
 const comingSoonRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/coming-soon",
-  component: lazyRouteComponent(() => import("./pages/ComingSoon"), "ComingSoon"),
+  component: lazyRouteComponent(
+    () => import("./pages/ComingSoon"),
+    "ComingSoon",
+  ),
 });
 const accountTabs = [
   "tickets",
@@ -86,7 +95,9 @@ export const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
   validateSearch: (s: Record<string, unknown>): { tab?: AccountTab } => ({
-    tab: accountTabs.includes(s.tab as AccountTab) ? (s.tab as AccountTab) : undefined,
+    tab: accountTabs.includes(s.tab as AccountTab)
+      ? (s.tab as AccountTab)
+      : undefined,
   }),
   component: lazyRouteComponent(() => import("./pages/Account"), "Account"),
 });

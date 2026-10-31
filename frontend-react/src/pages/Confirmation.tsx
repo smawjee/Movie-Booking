@@ -55,7 +55,9 @@ export function Confirmation() {
             <div>
               <dt>{booking.data.seats.length === 1 ? "Seat" : "Seats"}</dt>
               <dd>
-                {booking.data.seats.map((s) => `${s.row}${s.number}`).join(", ")}
+                {booking.data.seats
+                  .map((s) => `${s.row}${s.number}`)
+                  .join(", ")}
               </dd>
             </div>
             <div>
@@ -97,7 +99,11 @@ export function Confirmation() {
             initialDelivery={delivery}
             onSent={() => void booking.refetch()}
           />
-          <Link to="/account" search={{ tab: "tickets" }} className="text-button">
+          <Link
+            to="/account"
+            search={{ tab: "tickets" }}
+            className="text-button"
+          >
             View all your tickets in your account
           </Link>
         </article>

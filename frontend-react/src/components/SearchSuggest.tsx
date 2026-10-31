@@ -96,7 +96,10 @@ export function SearchSuggest({ onNavigate }: { onNavigate?: () => void }) {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => go(s.title)}
               >
-                <img src={poster(byId.get(s.id)?.poster_path ?? null, 92)} alt="" />
+                <img
+                  src={poster(byId.get(s.id)?.poster_path ?? null, 92)}
+                  alt=""
+                />
                 <span>
                   <strong>{s.title}</strong>
                   <small>{byId.get(s.id)?.rating} · Showing now</small>

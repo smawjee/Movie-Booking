@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 // delay is waiting out.
 const MODAL_CLOSE_MS = 260;
 
-export function useDelayedClose(onClosed: () => void, duration = MODAL_CLOSE_MS) {
+export function useDelayedClose(
+  onClosed: () => void,
+  duration = MODAL_CLOSE_MS,
+) {
   const [closing, setClosing] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);

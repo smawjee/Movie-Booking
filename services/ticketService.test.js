@@ -53,13 +53,11 @@ describe("ticket delivery", () => {
   it("attaches a PDF and inline QR to the booking recipient", async () => {
     vi.stubEnv("SMTP_USER", "sender@example.test");
     vi.stubEnv("SMTP_PASS", "test");
-    const sendMail = vi
-      .fn()
-      .mockResolvedValue({
-        accepted: ["guest@example.test"],
-        rejected: [],
-        messageId: "test",
-      });
+    const sendMail = vi.fn().mockResolvedValue({
+      accepted: ["guest@example.test"],
+      rejected: [],
+      messageId: "test",
+    });
     vi.spyOn(nodemailer, "createTransport").mockReturnValue({ sendMail });
     expect(
       (await tickets.deliver({ ...booking, email: "guest@example.test" }))

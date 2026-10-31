@@ -41,7 +41,6 @@ export function Membership() {
     queryClient.invalidateQueries({ queryKey: ["membership", "mine"] });
   };
 
-
   return (
     <section className="section">
       <span className="eyebrow">Cinego members</span>
@@ -134,9 +133,13 @@ export function Membership() {
         <div className={`modal${chosenClosing ? " is-closing" : ""}`}>
           <PaymentForm
             clientSecret={paymentIntent.data?.clientSecret ?? null}
-            customerSessionClientSecret={paymentIntent.data?.customerSessionClientSecret}
+            customerSessionClientSecret={
+              paymentIntent.data?.customerSessionClientSecret
+            }
             amountPence={paymentIntent.data?.amountPence ?? chosen.pricePence}
-            label={mine.data ? `Switch to ${chosen.name}` : `Join ${chosen.name}`}
+            label={
+              mine.data ? `Switch to ${chosen.name}` : `Join ${chosen.name}`
+            }
             onSuccess={pay}
             onCancel={closeChosen}
           >

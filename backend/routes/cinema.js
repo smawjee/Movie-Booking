@@ -131,7 +131,8 @@ router.post("/reservations", async (req, res) => {
       return res.status(404).json({ error: "Screening not found" });
     if (hasStarted(screening))
       return res.status(409).json({
-        error: "This screening has already started. Please choose a later showtime.",
+        error:
+          "This screening has already started. Please choose a later showtime.",
         code: "SCREENING_STARTED",
       });
     const user = await getAuthedUser(req);
@@ -140,7 +141,9 @@ router.post("/reservations", async (req, res) => {
       parsed.data.screeningId,
       parsed.data.ageConfirmation,
     );
-    res.status(201).json(await store.reserve({ ...parsed.data, ageConfirmation }));
+    res
+      .status(201)
+      .json(await store.reserve({ ...parsed.data, ageConfirmation }));
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message, code: e.code });
   }
@@ -153,9 +156,12 @@ async function priceReservation(req, reservationId, promoCode) {
   const user = await getAuthedUser(req);
   const promo = promoCode ? await store.getActivePromotion(promoCode) : null;
   if (promoCode && !promo)
-    throw Object.assign(new Error("That promo code is invalid or has expired"), {
-      status: 400,
-    });
+    throw Object.assign(
+      new Error("That promo code is invalid or has expired"),
+      {
+        status: 400,
+      },
+    );
   let membership = null;
   let student = false;
   let freeTicketAvailable = false;

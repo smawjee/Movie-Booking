@@ -59,7 +59,13 @@ export function useReservationPaymentIntent(
   promoCode?: string,
 ) {
   return useQuery({
-    queryKey: ["payment-intent", "reservation", reservationId, email, promoCode || ""],
+    queryKey: [
+      "payment-intent",
+      "reservation",
+      reservationId,
+      email,
+      promoCode || "",
+    ],
     queryFn: () =>
       api.createPaymentIntent(reservationId as string, email, promoCode),
     enabled: Boolean(reservationId && email),

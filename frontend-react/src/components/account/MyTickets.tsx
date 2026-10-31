@@ -70,7 +70,8 @@ function TicketRow({ booking, email }: { booking: Booking; email?: string }) {
 export function MyTickets({ email }: { email?: string }) {
   const bookings = useMyBookings(true);
   const [showPast, setShowPast] = useState(false);
-  if (bookings.isLoading) return <div className="empty loading">Loading your tickets…</div>;
+  if (bookings.isLoading)
+    return <div className="empty loading">Loading your tickets…</div>;
   if (bookings.isError)
     return (
       <div className="empty" role="alert">

@@ -12,7 +12,8 @@ const REVIEW_MS = 3000;
 const CODE_TTL_MS = 15 * 60000;
 const MAX_CODE_ATTEMPTS = 5;
 const STUDENT_VALID_DAYS = 365;
-const STUDENT_EMAIL = /@([a-z0-9-]+\.)+(ac\.uk|edu|edu\.[a-z]{2}|ac\.[a-z]{2})$/i;
+const STUDENT_EMAIL =
+  /@([a-z0-9-]+\.)+(ac\.uk|edu|edu\.[a-z]{2}|ac\.[a-z]{2})$/i;
 const DOCUMENT_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -37,7 +38,13 @@ function ageOn(dob, now = new Date()) {
 }
 
 const ageBandFor = (age) =>
-  age >= 18 ? "18-plus" : age >= 15 ? "15-17" : age >= 12 ? "12-14" : "under-12";
+  age >= 18
+    ? "18-plus"
+    : age >= 15
+      ? "15-17"
+      : age >= 12
+        ? "12-14"
+        : "under-12";
 
 function checkDocument(document) {
   if (!document || typeof document !== "object")
@@ -45,7 +52,10 @@ function checkDocument(document) {
   if (!DOCUMENT_TYPES.has(document.type))
     throw httpError("Upload a JPG, PNG, WEBP, HEIC or PDF file", 400);
   if (!(document.size >= 10 * 1024))
-    throw httpError("That file is too small to be a readable document photo", 400);
+    throw httpError(
+      "That file is too small to be a readable document photo",
+      400,
+    );
   if (document.size > 10 * 1024 * 1024)
     throw httpError("That file is over 10 MB", 400);
   return {
@@ -142,7 +152,8 @@ const isStudent = (profile) =>
     new Date(profile.student_verified_until) > new Date());
 
 const isAgeVerified = (profile) =>
-  profile?.id_verification_status === "verified" && Boolean(profile.date_of_birth);
+  profile?.id_verification_status === "verified" &&
+  Boolean(profile.date_of_birth);
 
 function publicProfile(profile, user) {
   const age = profile.date_of_birth ? ageOn(profile.date_of_birth) : null;
@@ -182,7 +193,10 @@ async function updateProfile(userId, { fullName, dateOfBirth }) {
     const age = ageOn(dateOfBirth);
     if (age === null) throw httpError("Enter a valid date of birth", 400);
     if (age < MIN_ACCOUNT_AGE)
-      throw httpError(`You must be ${MIN_ACCOUNT_AGE} or older to have an account`, 403);
+      throw httpError(
+        `You must be ${MIN_ACCOUNT_AGE} or older to have an account`,
+        403,
+      );
     fields.date_of_birth = dateOfBirth;
   }
   if (Object.keys(fields).length) await setProfile(userId, fields);
@@ -195,7 +209,8 @@ async function submitIdentity(userId, { documentType, dateOfBirth, document }) {
     throw httpError("Your ID is already verified", 409);
   const file = checkDocument(document);
   const age = ageOn(dateOfBirth);
-  if (age === null) throw httpError("Enter the date of birth shown on your ID", 400);
+  if (age === null)
+    throw httpError("Enter the date of birth shown on your ID", 400);
   if (current.date_of_birth && current.date_of_birth !== dateOfBirth) {
     await supabase.from("verification_requests").insert({
       user_id: userId,
@@ -226,9 +241,14 @@ async function submitIdentity(userId, { documentType, dateOfBirth, document }) {
   return { status: "pending", reviewMs: REVIEW_MS };
 }
 
-async function startStudent(userId, { studentEmail, institution }, sendMessage) {
+async function startStudent(
+  userId,
+  { studentEmail, institution },
+  sendMessage,
+) {
   const current = await getProfile(userId);
-  if (isStudent(current)) throw httpError("You’re already a verified student", 409);
+  if (isStudent(current))
+    throw httpError("You’re already a verified student", 409);
   const email = String(studentEmail).trim().toLowerCase();
   if (!STUDENT_EMAIL.test(email))
     throw httpError(
@@ -290,7 +310,10 @@ async function confirmStudent(userId, { code, document }) {
       .from("verification_requests")
       .update({ attempts: request.attempts + 1 })
       .eq("id", request.id);
-    throw httpError("That code isn’t right. Check your email and try again.", 422);
+    throw httpError(
+      "That code isn’t right. Check your email and try again.",
+      422,
+    );
   }
   // Close the email-code step; a fresh pending request (the document
   // review) starts its review timer now.

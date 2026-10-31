@@ -1,6 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 import { CreditCard, Plus } from "lucide-react";
 import { account } from "../../lib/api";
 import { useSavedCards } from "../../lib/hooks";
@@ -21,7 +26,8 @@ function AddCardForm({ onDone }: { onDone: () => void }) {
       redirect: "if_required",
     });
     setSaving(false);
-    if (setupError) return setError(setupError.message || "Card could not be saved.");
+    if (setupError)
+      return setError(setupError.message || "Card could not be saved.");
     onDone();
   };
   return (
@@ -49,12 +55,16 @@ export function PaymentMethods() {
     mutationFn: account.cardSetupIntent,
     onSuccess: (data) => setSetupSecret(data.clientSecret),
   });
-  const remove = useMutation({ mutationFn: account.removeCard, onSuccess: refresh });
+  const remove = useMutation({
+    mutationFn: account.removeCard,
+    onSuccess: refresh,
+  });
   const makeDefault = useMutation({
     mutationFn: account.setDefaultCard,
     onSuccess: refresh,
   });
-  const error = cards.error || startAdd.error || remove.error || makeDefault.error;
+  const error =
+    cards.error || startAdd.error || remove.error || makeDefault.error;
   return (
     <div className="account-section">
       <div className="section-head">
@@ -84,10 +94,13 @@ export function PaymentMethods() {
       {setupSecret && stripePromise && (
         <div className="card add-card">
           <p className="notice">
-            Test mode: use <strong>4242 4242 4242 4242</strong>, any future
-            date and any CVC.
+            Test mode: use <strong>4242 4242 4242 4242</strong>, any future date
+            and any CVC.
           </p>
-          <Elements stripe={stripePromise} options={{ clientSecret: setupSecret, appearance }}>
+          <Elements
+            stripe={stripePromise}
+            options={{ clientSecret: setupSecret, appearance }}
+          >
             <AddCardForm
               onDone={() => {
                 setSetupSecret(null);
@@ -117,7 +130,8 @@ export function PaymentMethods() {
                   {card.brand.toUpperCase()} •••• {card.last4}
                 </strong>
                 <small>
-                  Expires {String(card.expMonth).padStart(2, "0")}/{card.expYear}
+                  Expires {String(card.expMonth).padStart(2, "0")}/
+                  {card.expYear}
                 </small>
               </div>
               {card.isDefault ? (
@@ -146,8 +160,8 @@ export function PaymentMethods() {
         </ul>
       )}
       <p className="muted small">
-        To change a card, add the new one, make it your default, then remove
-        the old one.
+        To change a card, add the new one, make it your default, then remove the
+        old one.
       </p>
     </div>
   );
