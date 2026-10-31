@@ -81,7 +81,10 @@ export const account = {
       method: "DELETE",
     }),
   setDefaultCard: (id: string) =>
-    authed(`/api/account/payment-methods/${encodeURIComponent(id)}/default`, post()),
+    authed(
+      `/api/account/payment-methods/${encodeURIComponent(id)}/default`,
+      post(),
+    ),
   verifyIdentity: (body: {
     documentType: "passport" | "driving_licence" | "national_id";
     dateOfBirth: string;
@@ -111,7 +114,8 @@ export const admin = {
       `/api/admin/bookings/${encodeURIComponent(reference)}/resend`,
       post(),
     ),
-  verify: (code: string) => authed<TicketCheck>("/api/admin/verify", post({ code })),
+  verify: (code: string) =>
+    authed<TicketCheck>("/api/admin/verify", post({ code })),
 };
 export const api = {
   booking: (reference: string) =>
@@ -151,7 +155,8 @@ export const api = {
   advanceScreenings: (params: URLSearchParams) =>
     json<Screening[]>(`/api/screenings/upcoming?${params}`),
   seats: (screeningId: string) => json(`/api/screenings/${screeningId}/seats`),
-  reserve: (body: unknown) => authed<Reservation>("/api/reservations", post(body)),
+  reserve: (body: unknown) =>
+    authed<Reservation>("/api/reservations", post(body)),
   createPaymentIntent: (
     reservationId: string,
     email: string,

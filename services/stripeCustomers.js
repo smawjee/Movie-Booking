@@ -83,11 +83,17 @@ async function listCards(userId) {
   const customerId = await existingCustomerId(userId);
   if (!customerId) return { cards: [], defaultId: null };
   const [methods, customer] = await Promise.all([
-    stripe.paymentMethods.list({ customer: customerId, type: "card", limit: 20 }),
+    stripe.paymentMethods.list({
+      customer: customerId,
+      type: "card",
+      limit: 20,
+    }),
     stripe.customers.retrieve(customerId),
   ]);
   const defaultId =
-    customer.invoice_settings?.default_payment_method || methods.data[0]?.id || null;
+    customer.invoice_settings?.default_payment_method ||
+    methods.data[0]?.id ||
+    null;
   return {
     defaultId,
     cards: methods.data.map((m) => ({
@@ -129,7 +135,8 @@ async function setDefaultCard(userId, paymentMethodId) {
 
 async function createSetupIntent(userId, email) {
   const customerId = await getOrCreateStripeCustomer(userId, email);
-  if (!customerId) throw httpError("Saved cards are unavailable right now", 503);
+  if (!customerId)
+    throw httpError("Saved cards are unavailable right now", 503);
   const intent = await stripe.setupIntents.create({
     customer: customerId,
     payment_method_types: ["card"],

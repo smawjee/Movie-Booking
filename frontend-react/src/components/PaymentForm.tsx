@@ -54,9 +54,10 @@ function StripeCheckoutForm({
     if (!stripe || !elements || !ready) return;
     setProcessing(true);
     setError("");
-    const { error: confirmError, paymentIntent } = await stripe.confirmPayment(
-      { elements, redirect: "if_required" },
-    );
+    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required",
+    });
     if (confirmError) {
       setError(confirmError.message || "Payment failed. Please try again.");
       setProcessing(false);
@@ -166,7 +167,9 @@ export function PaymentForm({
           options={{
             clientSecret,
             appearance,
-            ...(customerSessionClientSecret ? { customerSessionClientSecret } : {}),
+            ...(customerSessionClientSecret
+              ? { customerSessionClientSecret }
+              : {}),
           }}
         >
           <StripeCheckoutForm

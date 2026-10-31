@@ -51,11 +51,7 @@ const hash = (s) =>
   Math.abs([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
 function buildScreenings(
   movies,
-  {
-    cinema = "edinburgh",
-    date = ukNow().date,
-    format,
-  } = {},
+  { cinema = "edinburgh", date = ukNow().date, format } = {},
 ) {
   if (!isCinema(cinema)) return [];
   const screens = SCREENS.map((screen) => ({
@@ -87,7 +83,8 @@ function buildScreenings(
       return item;
     })
     .filter((item) => !format || item.experience.id === format);
-}function getScreening(id) {
+}
+function getScreening(id) {
   return screenings.get(id);
 }
 function getSeats(screeningId) {
@@ -218,7 +215,12 @@ function pricingMetadata(reservationId, email, pricing, account = {}) {
   };
 }
 
-async function createPaymentIntent(reservationId, email, pricing, account = {}) {
+async function createPaymentIntent(
+  reservationId,
+  email,
+  pricing,
+  account = {},
+) {
   if (!stripeConfigured)
     throw Object.assign(new Error("Payments are not configured"), {
       status: 500,
@@ -257,8 +259,12 @@ function confirm({
         existing.payment.stripePaymentIntentId === payment.stripePaymentIntentId
       )
         return existing;
-  const { reservation, screening, seats, totalPence: fullTotalPence } =
-    getReservationTotal(reservationId);
+  const {
+    reservation,
+    screening,
+    seats,
+    totalPence: fullTotalPence,
+  } = getReservationTotal(reservationId);
   const totalPence = Math.max(
     0,
     Math.round((fullTotalPence * (100 - (discountPercent || 0))) / 100) -
@@ -360,7 +366,9 @@ async function getBooking(reference) {
 }
 async function listBookingsForUser(userId, email) {
   return [...bookings.values()]
-    .filter((b) => (userId && b.userId === userId) || (email && b.email === email))
+    .filter(
+      (b) => (userId && b.userId === userId) || (email && b.email === email),
+    )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 async function updateDeliveryStatus(reference, result) {

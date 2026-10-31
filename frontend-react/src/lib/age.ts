@@ -12,7 +12,13 @@ export function ageFrom(dob: string, now = new Date()): number | null {
 }
 
 export const ageBandFor = (age: number) =>
-  age >= 18 ? "18-plus" : age >= 15 ? "15-17" : age >= 12 ? "12-14" : "under-12";
+  age >= 18
+    ? "18-plus"
+    : age >= 15
+      ? "15-17"
+      : age >= 12
+        ? "12-14"
+        : "under-12";
 
 export const minimumAgeFor = (rating: string) =>
   rating === "18" ? 18 : rating === "15" ? 15 : rating === "12A" ? 12 : 0;
@@ -27,7 +33,10 @@ export function latestDob(years: number) {
 export function passwordStrength(password: string) {
   const checks = [
     { ok: password.length >= 8, label: "At least 8 characters" },
-    { ok: /[a-z]/.test(password) && /[A-Z]/.test(password), label: "Upper and lower case" },
+    {
+      ok: /[a-z]/.test(password) && /[A-Z]/.test(password),
+      label: "Upper and lower case",
+    },
     { ok: /\d/.test(password), label: "A number" },
     { ok: /[^A-Za-z0-9]/.test(password), label: "A symbol" },
   ];

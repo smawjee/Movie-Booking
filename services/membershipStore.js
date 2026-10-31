@@ -71,7 +71,13 @@ const mapMembership = (row) =>
     cancelledAt: row.cancelled_at || null,
   };
 
-async function checkoutMembership({ userId, plan, payment, promoCode, discountPence }) {
+async function checkoutMembership({
+  userId,
+  plan,
+  payment,
+  promoCode,
+  discountPence,
+}) {
   findPlan(plan);
   await assertEligible(userId, plan);
   const { data: membership, error: membershipError } = await supabase
@@ -158,7 +164,9 @@ async function resumeMembership(userId) {
 const periodStart = (membership) => {
   // Benefits reset on each monthly renewal: the period starts 30 days
   // before renews_at.
-  const start = new Date(new Date(membership.renewsAt).getTime() - 30 * 86400000);
+  const start = new Date(
+    new Date(membership.renewsAt).getTime() - 30 * 86400000,
+  );
   return start.toISOString().slice(0, 10);
 };
 

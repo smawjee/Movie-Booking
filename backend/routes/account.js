@@ -155,7 +155,8 @@ router.post(
         document: documentMeta,
       })
       .safeParse(req.body);
-    if (!parsed.success) throw invalid("Complete every field to verify your ID");
+    if (!parsed.success)
+      throw invalid("Complete every field to verify your ID");
     return profiles.submitIdentity(req.user.id, parsed.data);
   }),
 );

@@ -16,7 +16,10 @@ const fmt = (iso: string | null | undefined) =>
 export function MembershipManager() {
   const queryClient = useQueryClient();
   const mine = useMyMembership(true);
-  const plans = useQuery({ queryKey: ["membership-plans"], queryFn: api.membershipPlans });
+  const plans = useQuery({
+    queryKey: ["membership-plans"],
+    queryFn: api.membershipPlans,
+  });
   const [confirming, setConfirming] = useState(false);
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ["membership", "mine"] });
@@ -27,8 +30,12 @@ export function MembershipManager() {
       void refresh();
     },
   });
-  const resume = useMutation({ mutationFn: api.resumeMembership, onSuccess: refresh });
-  if (mine.isLoading) return <div className="empty loading">Loading membership…</div>;
+  const resume = useMutation({
+    mutationFn: api.resumeMembership,
+    onSuccess: refresh,
+  });
+  if (mine.isLoading)
+    return <div className="empty loading">Loading membership…</div>;
   const membership = mine.data;
   const plan = plans.data?.find((p) => p.id === membership?.plan);
   const error = cancel.error || resume.error || mine.error;
@@ -54,7 +61,9 @@ export function MembershipManager() {
               <span className="plan-tag">{plan?.name || membership.plan}</span>
               <h3>{plan ? `${money(plan.pricePence)} / month` : "Cinego+"}</h3>
             </div>
-            <span className={`status-pill ${membership.status === "active" ? "verified" : "pending"}`}>
+            <span
+              className={`status-pill ${membership.status === "active" ? "verified" : "pending"}`}
+            >
               {membership.status === "active" ? "Active" : "Cancels soon"}
             </span>
           </div>
@@ -64,7 +73,11 @@ export function MembershipManager() {
               <dd>{fmt(membership.createdAt)}</dd>
             </div>
             <div>
-              <dt>{membership.status === "active" ? "Renews on" : "Benefits end on"}</dt>
+              <dt>
+                {membership.status === "active"
+                  ? "Renews on"
+                  : "Benefits end on"}
+              </dt>
               <dd>{fmt(membership.renewsAt)}</dd>
             </div>
           </dl>
@@ -90,11 +103,15 @@ export function MembershipManager() {
               </button>
             </>
           ) : confirming ? (
-            <div className="confirm-box" role="alertdialog" aria-label="Cancel membership">
+            <div
+              className="confirm-box"
+              role="alertdialog"
+              aria-label="Cancel membership"
+            >
               <p>
                 Cancel your {plan?.name} membership? You’ll keep your benefits
-                until {fmt(membership.renewsAt)} and won’t be charged again.
-                You can resume any time before then.
+                until {fmt(membership.renewsAt)} and won’t be charged again. You
+                can resume any time before then.
               </p>
               <div className="ticket-actions">
                 <button
@@ -104,7 +121,10 @@ export function MembershipManager() {
                 >
                   {cancel.isPending ? "Cancelling…" : "Yes, cancel membership"}
                 </button>
-                <button className="button secondary" onClick={() => setConfirming(false)}>
+                <button
+                  className="button secondary"
+                  onClick={() => setConfirming(false)}
+                >
                   Keep membership
                 </button>
               </div>
@@ -114,7 +134,10 @@ export function MembershipManager() {
               <Link to="/membership" className="button secondary">
                 Switch plan
               </Link>
-              <button className="text-button danger" onClick={() => setConfirming(true)}>
+              <button
+                className="text-button danger"
+                onClick={() => setConfirming(true)}
+              >
                 Cancel membership
               </button>
             </div>

@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { supabase, supabaseConfigured } from "../lib/supabase";
-import { ageFrom, latestDob, MIN_ACCOUNT_AGE, passwordStrength } from "../lib/age";
+import {
+  ageFrom,
+  latestDob,
+  MIN_ACCOUNT_AGE,
+  passwordStrength,
+} from "../lib/age";
 
 /** Signed-out view: sign in, or create an account with an age check. */
 export function AccountPanel() {
@@ -86,7 +91,10 @@ export function AccountPanel() {
   };
   const resetPassword = async () => {
     if (!email)
-      return setStatus({ text: "Enter your email address first.", error: true });
+      return setStatus({
+        text: "Enter your email address first.",
+        error: true,
+      });
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/account`,
     });
@@ -134,8 +142,8 @@ export function AccountPanel() {
           />
           <small className="field-hint">
             Used to check age ratings when you book. You must be{" "}
-            {MIN_ACCOUNT_AGE}+ to register; you can verify your ID later for
-            15 and 18 films.
+            {MIN_ACCOUNT_AGE}+ to register; you can verify your ID later for 15
+            and 18 films.
           </small>
         </label>
       )}
@@ -172,8 +180,8 @@ export function AccountPanel() {
             checked={terms}
             onChange={(e) => setTerms(e.target.checked)}
           />{" "}
-          I accept the terms of use and privacy policy, and confirm the
-          details above are true.
+          I accept the terms of use and privacy policy, and confirm the details
+          above are true.
         </label>
       )}
       {status && (

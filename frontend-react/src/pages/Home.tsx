@@ -130,7 +130,9 @@ export function Home() {
         {upcoming.isLoading ? (
           <div className="empty loading">Loading upcoming releases…</div>
         ) : upcoming.isError ? (
-          <div className="empty">Upcoming releases are temporarily unavailable.</div>
+          <div className="empty">
+            Upcoming releases are temporarily unavailable.
+          </div>
         ) : (
           <div className="movie-grid">
             {upcoming.data?.slice(0, 4).map((m) => (
@@ -142,7 +144,10 @@ export function Home() {
                     className="poster-link"
                     aria-label={`${m.title}: details`}
                   >
-                    <img src={poster(m.poster_path)} alt={`${m.title} poster`} />
+                    <img
+                      src={poster(m.poster_path)}
+                      alt={`${m.title} poster`}
+                    />
                   </Link>
                   <span className="badge movie-rating">{m.rating || "NR"}</span>
                 </div>

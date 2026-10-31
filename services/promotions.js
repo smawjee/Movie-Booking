@@ -15,7 +15,8 @@ async function getActivePromotion(code) {
     .maybeSingle();
   if (error || !data || !data.active) return null;
   const now = new Date();
-  if (new Date(data.starts_at) > now || new Date(data.ends_at) < now) return null;
+  if (new Date(data.starts_at) > now || new Date(data.ends_at) < now)
+    return null;
   return {
     code: data.code,
     description: data.description,

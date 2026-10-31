@@ -17,7 +17,9 @@ async function auditoriumMap() {
       if (error) throw error;
       // Cinema slug -> its screens, in screen-number order.
       const map = new Map();
-      for (const row of [...data].sort((a, b) => a.screen_number - b.screen_number)) {
+      for (const row of [...data].sort(
+        (a, b) => a.screen_number - b.screen_number,
+      )) {
         const screens = map.get(row.cinemas.slug) || [];
         screens.push({
           id: row.id,
@@ -41,11 +43,7 @@ function ageAllowed(rating, ageBand, declared) {
 
 async function buildScreenings(
   movies,
-  {
-    cinema = "edinburgh",
-    date = ukNow().date,
-    format,
-  } = {},
+  { cinema = "edinburgh", date = ukNow().date, format } = {},
 ) {
   const auditoriums = (await auditoriumMap()).get(cinema) || [];
   const plan = planDay(movies, auditoriums);
@@ -163,18 +161,20 @@ async function getSeats(screeningId) {
     .maybeSingle();
   if (screeningError || !screening) return null;
 
-  const [{ data: seatRows, error: seatError }, { data: heldRows, error: heldError }] =
-    await Promise.all([
-      supabase
-        .from("seats")
-        .select("id, row_label, seat_number, tier")
-        .eq("auditorium_id", screening.auditorium_id),
-      supabase
-        .from("seat_reservations")
-        .select("seat_id")
-        .eq("screening_id", screeningId)
-        .in("status", ["held", "confirmed"]),
-    ]);
+  const [
+    { data: seatRows, error: seatError },
+    { data: heldRows, error: heldError },
+  ] = await Promise.all([
+    supabase
+      .from("seats")
+      .select("id, row_label, seat_number, tier")
+      .eq("auditorium_id", screening.auditorium_id),
+    supabase
+      .from("seat_reservations")
+      .select("seat_id")
+      .eq("screening_id", screeningId)
+      .in("status", ["held", "confirmed"]),
+  ]);
   if (seatError) throw seatError;
   if (heldError) throw heldError;
 
@@ -192,7 +192,8 @@ async function getSeats(screeningId) {
         row: s.row_label,
         number: s.seat_number,
         tier: s.tier,
-        pricePence: screening.base_price_pence + (s.tier === "premium" ? 250 : 0),
+        pricePence:
+          screening.base_price_pence + (s.tier === "premium" ? 250 : 0),
         available:
           !unavailable.has(s.id) && hash(`${label}${randomSeed}`) % 9 !== 0,
       };
@@ -257,7 +258,8 @@ async function reserve({ screeningId, seatIds, ageConfirmation }) {
       ...ageConfirmation,
       confirmedAt: new Date().toISOString(),
     },
-    expiresAt: holds?.[0]?.expires_at ?? new Date(Date.now() + 600000).toISOString(),
+    expiresAt:
+      holds?.[0]?.expires_at ?? new Date(Date.now() + 600000).toISOString(),
     status: "held",
   };
 }
@@ -266,7 +268,9 @@ function mapBookingRow(data) {
   const s = data.screenings;
   const dt = new Date(s.starts_at);
   const exp = experiences[s.auditoriums.experience_id];
-  const payment = Array.isArray(data.payments) ? data.payments[0] : data.payments;
+  const payment = Array.isArray(data.payments)
+    ? data.payments[0]
+    : data.payments;
   const delivery = Array.isArray(data.ticket_deliveries)
     ? data.ticket_deliveries[0]
     : data.ticket_deliveries;
@@ -381,7 +385,12 @@ async function getReservationQuote(reservationId) {
   };
 }
 
-async function createPaymentIntent(reservationId, email, pricing, account = {}) {
+async function createPaymentIntent(
+  reservationId,
+  email,
+  pricing,
+  account = {},
+) {
   if (!stripeConfigured)
     throw Object.assign(new Error("Payments are not configured"), {
       status: 500,

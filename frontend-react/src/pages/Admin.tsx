@@ -54,7 +54,8 @@ function Overview() {
     queryKey: ["admin", "overview"],
     queryFn: admin.overview,
   });
-  if (overview.isLoading) return <div className="empty loading">Loading figures…</div>;
+  if (overview.isLoading)
+    return <div className="empty loading">Loading figures…</div>;
   if (overview.isError)
     return (
       <p className="error" role="alert">

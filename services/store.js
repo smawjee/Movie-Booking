@@ -32,6 +32,7 @@ module.exports = {
   getMembership: (...args) => membershipStore.getMembership(...args),
   cancelMembership: (...args) => membershipStore.cancelMembership(...args),
   resumeMembership: (...args) => membershipStore.resumeMembership(...args),
-  freeTicketAvailable: (...args) => membershipStore.freeTicketAvailable(...args),
+  freeTicketAvailable: (...args) =>
+    membershipStore.freeTicketAvailable(...args),
   recordFreeTicket: (...args) => membershipStore.recordFreeTicket(...args),
 };

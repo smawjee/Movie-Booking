@@ -33,7 +33,8 @@ export function Account() {
     const meta = session?.user.user_metadata;
     if (!profile.data || synced.current || !meta) return;
     const missing = {
-      ...(!profile.data.fullName && meta.full_name && { fullName: meta.full_name }),
+      ...(!profile.data.fullName &&
+        meta.full_name && { fullName: meta.full_name }),
       ...(!profile.data.dateOfBirth &&
         meta.date_of_birth && { dateOfBirth: meta.date_of_birth }),
     };
@@ -64,13 +65,20 @@ export function Account() {
       {profile.data && !profile.data.dateOfBirth && (
         <p className="notice">
           Add your date of birth in{" "}
-          <button className="text-button" onClick={() => navigate({ search: { tab: "profile" } })}>
+          <button
+            className="text-button"
+            onClick={() => navigate({ search: { tab: "profile" } })}
+          >
             Profile
           </button>{" "}
           so we can check age ratings when you book.
         </p>
       )}
-      <div className="segmented account-tabs" role="tablist" aria-label="Account sections">
+      <div
+        className="segmented account-tabs"
+        role="tablist"
+        aria-label="Account sections"
+      >
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -97,7 +105,10 @@ export function Account() {
           ) : active === "verification" ? (
             <Verification profile={profile.data!} />
           ) : (
-            <ProfileSettings key={profile.data!.dateOfBirth} profile={profile.data!} />
+            <ProfileSettings
+              key={profile.data!.dateOfBirth}
+              profile={profile.data!}
+            />
           ))}
       </div>
     </section>

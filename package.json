@@ -7,8 +7,8 @@
     "dev": "vite --config frontend-react/vite.config.mts",
     "dev:server": "nodemon backend/index.js",
     "build": "vite build --config frontend-react/vite.config.mts",
-    "format": "prettier --write \"frontend/**/*.{js,css,html}\" \"frontend-react/**/*.{ts,tsx,css,html,json}\" \"backend/**/*.js\" \"services/**/*.js\" package.json README.md && sql-formatter --fix --language postgresql supabase/migrations/20260910_initial_cinego.sql",
-    "format:check": "prettier --check \"frontend/**/*.{js,css,html}\" \"frontend-react/**/*.{ts,tsx,css,html,json}\" \"backend/**/*.js\" \"services/**/*.js\" package.json README.md",
+    "format": "prettier --write \"frontend-react/**/*.{ts,tsx,css,html,json}\" \"backend/**/*.js\" \"services/**/*.js\" package.json README.md && sql-formatter --fix --language postgresql supabase/migrations/20260910_initial_cinego.sql",
+    "format:check": "prettier --check \"frontend-react/**/*.{ts,tsx,css,html,json}\" \"backend/**/*.js\" \"services/**/*.js\" package.json README.md",
     "typecheck": "tsc -p frontend-react/tsconfig.json",
     "test": "vitest run",
     "check": "npm run typecheck && npm run build && node --check backend/index.js && node --check backend/routes/movies.js && node --check backend/routes/cinema.js && node --check backend/routes/tickets.js && node --check backend/routes/assistant.js && node --check backend/routes/stripeWebhook.js && node --check backend/routes/admin.js"
@@ -51,11 +51,16 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "nodemon": "^3.1.10",
+    "nodemon": "^3.1.14",
     "prettier": "^3.9.6",
     "sql-formatter": "^15.8.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.0"
+  },
+  "overrides": {
+    "nodemon": {
+      "minimatch": "^11.0.3"
+    }
   }
 }
