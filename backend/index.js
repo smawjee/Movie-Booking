@@ -5,6 +5,10 @@ const cors = require("cors");
 const fs = require("fs");
 
 const app = express();
+// Vercel's edge sits in front of every request and sets X-Forwarded-For to
+// the client's address. Trusting that one hop gives rate limiters the real
+// client IP instead of the proxy's, which would put everyone in one bucket.
+app.set("trust proxy", 1);
 app.use(cors());
 // Must come before express.json(): Stripe signature checks need the raw body.
 app.use("/api", require("./routes/stripeWebhook"));

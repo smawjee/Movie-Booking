@@ -54,10 +54,12 @@ async function main() {
     await check("health reports fallback", async () =>
       assert.equal((await request("/health")).data.database, "memory-fallback"),
     );
+    // Tomorrow, so the checks still find screenings after today's last show.
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     for (const path of [
       "/movies/now-playing",
       "/movies/upcoming",
-      "/screenings",
+      `/screenings?date=${tomorrow}`,
       "/screenings/upcoming",
       "/memberships/plans",
       "/experiences",
@@ -105,7 +107,7 @@ async function main() {
     await check("reject malformed reservation", async () =>
       assert.equal((await request("/reservations", {})).status, 400),
     );
-    screening = (await request("/screenings")).data[0];
+    screening = (await request(`/screenings?date=${tomorrow}`)).data[0];
     const seats = (
       await request(`/screenings/${screening.id}/seats`)
     ).data.seats.filter((s) => s.available);
@@ -163,7 +165,7 @@ async function main() {
       ),
     );
     await check("reject underage reservation", async () => {
-      const s = (await request("/screenings")).data.find(
+      const s = (await request(`/screenings?date=${tomorrow}`)).data.find(
         (s) => s.rating === "15",
       );
       assert.equal(
